@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Test runner script for Time Manager project

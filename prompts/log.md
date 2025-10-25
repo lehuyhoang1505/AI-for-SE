@@ -41,4 +41,9 @@ Help me fix this error while run unit test:
 ```
 
 # 5. Tối ưu & Mocking
+Promt:
+```
+Looking into `tests/*.py`, check if the test is optimized and show what to optimize if needed. Then output to `prompts/optimize.md
+```
+OUTPUT: [optimize.md](optimize.md)
 
