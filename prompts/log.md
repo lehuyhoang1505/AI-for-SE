@@ -29,3 +29,16 @@ Promt:
 ```
 Based on this document `test/test_design.md`, Create pytest unit tests for this Project's `Calculating overlapping free time slots` feature. save all test in `test` folder
 ```
+
+# 4. Chạy & Debug Tests
+- Chạy lệnh: `run_test.sh`
+=> lỗi: `ModuleNotFoundError: No module named 'pytests'`
+
+Promt: 
+```
+Help me fix this error while run unit test:
+`ModuleNotFoundError: No module named 'pytests'`
+```
+
+# 5. Tối ưu & Mocking
+

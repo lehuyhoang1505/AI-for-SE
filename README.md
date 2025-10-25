@@ -1,5 +1,7 @@
 # README for the Time Manager project (tests-focused)
 
+Project Readme: [README.md](src/README.md)
+
 This README explains how to run the project's tests locally and includes a small wrapper script (`run_tests.sh`) that sets the required environment (PYTHONPATH + Django test settings).
 
 Where tests live
@@ -74,5 +76,7 @@ Related files
 
 - Django test settings: `src/time_mamager/test_settings.py`
 - Application code: `src/meetings/`
+- Project README: [README.md](src/README.md)
 - Tests: `tests/`
+- Slide: [Slide Canva](https://www.canva.com/design/DAG2nlsFR1k/soonJh0gIRisxeUub7zJuw/edit)
 
