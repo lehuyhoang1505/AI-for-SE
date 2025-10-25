@@ -52,46 +52,91 @@ class TestGetTopSuggestions:
         for slot in results:
             assert slot.availability_percentage >= 50, "All slots should have >= 50% availability"
     
-    def test_all_above_threshold(self, create_meeting_request, create_suggested_slot):
-        """All Above Threshold: All suggestions meet minimum"""
+    @pytest.mark.parametrize("threshold,num_above,num_below,expected_count,scenario", [
+        (50, 12, 8, 10, "Default: 50% threshold, 12 above"),
+        (100, 5, 15, 5, "100%: Only perfect matches"),
+        (0, 20, 0, 10, "0%: Return all (limited by limit)"),
+        (50, 0, 10, 0, "All below threshold"),
+        (50, 5, 0, 5, "All above threshold (less than limit)"),
+    ])
+    def test_threshold_variations(self, create_meeting_request, create_suggested_slot,
+                                  threshold, num_above, num_below, expected_count, scenario):
+        """Parametrized test for various threshold scenarios"""
         meeting_request = create_meeting_request()
-        
         base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         
-        # Create 5 slots, all 100% available
-        for i in range(5):
+        # Create slots above threshold
+        for i in range(num_above):
+            if threshold == 100:
+                available = 10
+                total = 10
+            elif threshold == 0:
+                available = 50 + i * 2
+                total = 100
+            else:
+                available = threshold + (i * 5) if threshold + (i * 5) <= 100 else 100
+                total = 100
+            
+            hour_offset = i // 6
+            minute_offset = (i % 6) * 10
             create_suggested_slot(
                 meeting_request,
-                base_time.replace(hour=9 + i),
-                base_time.replace(hour=10 + i),
-                available_count=10,
-                total_participants=10
+                base_time.replace(hour=9 + hour_offset, minute=minute_offset),
+                base_time.replace(hour=10 + hour_offset, minute=minute_offset),
+                available_count=available,
+                total_participants=total
             )
         
-        results = get_top_suggestions(meeting_request, limit=10, min_availability_pct=50)
+        # Create slots below threshold
+        for i in range(num_below):
+            if threshold == 0:
+                continue  # Skip for 0% threshold
+            elif threshold == 100:
+                available = 9
+                total = 10
+            else:
+                available = max(0, threshold - 10 - (i * 5))
+                total = 100
+            
+            hour_offset = (num_above + i) // 6
+            minute_offset = ((num_above + i) % 6) * 10
+            create_suggested_slot(
+                meeting_request,
+                base_time.replace(hour=9 + hour_offset, minute=minute_offset),
+                base_time.replace(hour=10 + hour_offset, minute=minute_offset),
+                available_count=available,
+                total_participants=total
+            )
         
-        assert len(results) == 5, "Should return all 5 slots (less than limit)"
+        results = get_top_suggestions(meeting_request, limit=10, min_availability_pct=threshold)
+        
+        assert len(results) == expected_count, f"Failed for scenario: {scenario}"
     
-    def test_all_below_threshold(self, create_meeting_request, create_suggested_slot):
-        """All Below Threshold: No suggestions meet minimum"""
+    @pytest.mark.parametrize("limit,num_slots,expected_count,scenario", [
+        (1, 10, 1, "Limit=1: Single result"),
+        (0, 10, 0, "Limit=0: Zero limit"),
+        (100, 5, 5, "Limit exceeds available"),
+        (-5, 10, 5, "Negative limit (Python slice behavior: all except last 5)"),
+    ])
+    def test_limit_variations(self, create_meeting_request, create_suggested_slot,
+                             limit, num_slots, expected_count, scenario):
+        """Parametrized test for various limit scenarios"""
         meeting_request = create_meeting_request()
-        
         base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         
-        # Create 10 slots with 0-30% availability
-        for i in range(10):
-            available = i * 3  # 0, 3, 6, 9... (max 27%)
+        # Create slots above 50% threshold
+        for i in range(num_slots):
             create_suggested_slot(
                 meeting_request,
                 base_time.replace(hour=9 + i),
                 base_time.replace(hour=10 + i),
-                available_count=available,
+                available_count=60,
                 total_participants=100
             )
         
-        results = get_top_suggestions(meeting_request, limit=10, min_availability_pct=50)
+        results = get_top_suggestions(meeting_request, limit=limit, min_availability_pct=50)
         
-        assert len(results) == 0, "Should return empty list"
+        assert len(results) == expected_count, f"Failed for scenario: {scenario}"
     
     def test_exact_threshold(self, create_meeting_request, create_suggested_slot):
         """Exact Threshold: Slots at exact threshold percentage"""
@@ -131,143 +176,6 @@ class TestGetTopSuggestions:
         assert 49 not in percentages, "49% should be excluded"
         assert 50 in percentages or 50.0 in percentages, "50% should be included"
         assert 51 in percentages or 51.0 in percentages, "51% should be included"
-    
-    def test_zero_threshold(self, create_meeting_request, create_suggested_slot):
-        """Zero Threshold: Minimum 0% (return all)"""
-        meeting_request = create_meeting_request()
-        
-        base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        
-        # Create 20 slots with varying availability (0-100%)
-        for i in range(20):
-            available = i * 5  # 0, 5, 10, 15...
-            # Use hours and minutes separately to avoid minute > 59
-            hour_offset = i // 6
-            minute_offset = (i % 6) * 10
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=9 + hour_offset, minute=minute_offset),
-                base_time.replace(hour=10 + hour_offset, minute=minute_offset),
-                available_count=available,
-                total_participants=100
-            )
-        
-        results = get_top_suggestions(meeting_request, limit=10, min_availability_pct=0)
-        
-        assert len(results) == 10, "Should return top 10 slots (all included)"
-    
-    def test_hundred_percent_threshold(self, create_meeting_request, create_suggested_slot):
-        """100% Threshold: Only perfect matches"""
-        meeting_request = create_meeting_request()
-        
-        base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        
-        # Create 20 slots: 3 at 100%, rest below
-        for i in range(3):
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=9 + i),
-                base_time.replace(hour=10 + i),
-                available_count=10,
-                total_participants=10
-            )
-        
-        for i in range(17):
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=12 + (i // 2), minute=(i % 2) * 30),
-                base_time.replace(hour=13 + (i // 2), minute=(i % 2) * 30),
-                available_count=9,
-                total_participants=10
-            )
-        
-        results = get_top_suggestions(meeting_request, limit=10, min_availability_pct=100)
-        
-        assert len(results) == 3, "Should return only 3 slots with 100% availability"
-    
-    def test_limit_one(self, create_meeting_request, create_suggested_slot):
-        """Limit = 1: Single result limit"""
-        meeting_request = create_meeting_request()
-        
-        base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        
-        # Create 10 slots above 50%
-        for i in range(10):
-            available = 50 + i * 5
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=9 + i),
-                base_time.replace(hour=10 + i),
-                available_count=available,
-                total_participants=100
-            )
-        
-        results = get_top_suggestions(meeting_request, limit=1, min_availability_pct=50)
-        
-        assert len(results) == 1, "Should return single best slot"
-        assert results[0].availability_percentage >= 50, "Should have highest availability"
-    
-    def test_limit_zero(self, create_meeting_request, create_suggested_slot):
-        """Limit = 0: Zero limit edge case"""
-        meeting_request = create_meeting_request()
-        
-        base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        
-        # Create 10 slots above 50%
-        for i in range(10):
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=9 + i),
-                base_time.replace(hour=10 + i),
-                available_count=60,
-                total_participants=100
-            )
-        
-        results = get_top_suggestions(meeting_request, limit=0, min_availability_pct=50)
-        
-        assert len(results) == 0, "Should return empty list with limit=0"
-    
-    def test_negative_limit(self, create_meeting_request, create_suggested_slot):
-        """Negative Limit: Negative limit boundary"""
-        meeting_request = create_meeting_request()
-        
-        base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        
-        # Create 10 slots
-        for i in range(10):
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=9 + i),
-                base_time.replace(hour=10 + i),
-                available_count=60,
-                total_participants=100
-            )
-        
-        results = get_top_suggestions(meeting_request, limit=-5, min_availability_pct=50)
-        
-        # Implementation dependent - Python slicing with negative values returns all elements up to that point
-        # [:−5] returns all qualifying slots (implementation shows it returns filtered list sliced)
-        assert len(results) >= 0, "Should handle negative limit gracefully"
-    
-    def test_large_limit(self, create_meeting_request, create_suggested_slot):
-        """Large Limit: Limit exceeds available slots"""
-        meeting_request = create_meeting_request()
-        
-        base_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        
-        # Create 5 slots above 50%
-        for i in range(5):
-            create_suggested_slot(
-                meeting_request,
-                base_time.replace(hour=9 + i),
-                base_time.replace(hour=10 + i),
-                available_count=60,
-                total_participants=100
-            )
-        
-        results = get_top_suggestions(meeting_request, limit=100, min_availability_pct=50)
-        
-        assert len(results) == 5, "Should return all 5 qualifying slots (limited by available data)"
     
     def test_sorting_availability(self, create_meeting_request, create_suggested_slot):
         """Sorting - Availability: Multiple slots with same availability"""

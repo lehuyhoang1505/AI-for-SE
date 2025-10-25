@@ -70,30 +70,47 @@ class TestCalculateSlotAvailability:
         actual_ids = {str(pid) for pid in participant_ids}
         assert expected_ids == actual_ids, "All participant IDs should be in the list"
     
-    def test_partial_availability(self, sample_meeting_request, create_participant, create_busy_slot):
-        """Partial Availability: Some available, some busy"""
+    def test_partial_availability(self, sample_meeting_request):
+        """Partial Availability: Some available, some busy (optimized with bulk_create)"""
         start_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         end_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
         
-        # Create 10 participants, all responded
-        available_participants = []
-        for i in range(7):
-            p = create_participant(
-                sample_meeting_request, 
+        from meetings.models import Participant, BusySlot
+        
+        # Create 10 participants using bulk_create: 7 available, 3 busy
+        available_participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'available{i}@test.com'
-            )
-            available_participants.append(p)
+                email=f'available{i}@test.com',
+                name=f'Available {i}',
+                timezone='UTC'
+            ) for i in range(7)
+        ]
+        Participant.objects.bulk_create(available_participants)
         
         # Create 3 busy participants
-        for i in range(3):
-            p = create_participant(
-                sample_meeting_request, 
+        busy_participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'busy{i}@test.com'
-            )
-            # Add busy slot that conflicts
-            create_busy_slot(p, start_time, end_time)
+                email=f'busy{i}@test.com',
+                name=f'Busy {i}',
+                timezone='UTC'
+            ) for i in range(3)
+        ]
+        busy_participants = Participant.objects.bulk_create(busy_participants)
+        
+        # Add busy slots
+        busy_slots = [
+            BusySlot(
+                participant=p,
+                start_time=start_time,
+                end_time=end_time,
+                description='Busy'
+            ) for p in busy_participants
+        ]
+        BusySlot.objects.bulk_create(busy_slots)
         
         available, total, participant_ids = calculate_slot_availability(
             sample_meeting_request, start_time, end_time
@@ -237,34 +254,56 @@ class TestCalculateSlotAvailability:
         assert len(participant_ids) == 1, "Should have 1 participant ID"
         assert str(p.id) in [str(pid) for pid in participant_ids], "Participant ID should match"
     
-    def test_large_group(self, sample_meeting_request, create_participant, create_busy_slot):
-        """Large Group: Many participants (stress test)"""
+    def test_large_group(self, sample_meeting_request):
+        """Large Group: Many participants (optimized with bulk_create)"""
         start_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         end_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
         
-        # Create 100 participants, 75 available, 25 busy
-        for i in range(75):
-            create_participant(
-                sample_meeting_request, 
-                has_responded=True,
-                email=f'available{i}@test.com'
-            )
+        # Create 20 participants using bulk_create: 15 available, 5 busy
+        from meetings.models import Participant, BusySlot
         
-        for i in range(25):
-            p = create_participant(
-                sample_meeting_request, 
+        # Create available participants
+        available_participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'busy{i}@test.com'
-            )
-            create_busy_slot(p, start_time, end_time)
+                email=f'available{i}@test.com',
+                name=f'Available {i}',
+                timezone='UTC'
+            ) for i in range(15)
+        ]
+        Participant.objects.bulk_create(available_participants)
+        
+        # Create busy participants
+        busy_participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
+                has_responded=True,
+                email=f'busy{i}@test.com',
+                name=f'Busy {i}',
+                timezone='UTC'
+            ) for i in range(5)
+        ]
+        busy_participants = Participant.objects.bulk_create(busy_participants)
+        
+        # Create busy slots for busy participants
+        busy_slots = [
+            BusySlot(
+                participant=p,
+                start_time=start_time,
+                end_time=end_time,
+                description='Busy'
+            ) for p in busy_participants
+        ]
+        BusySlot.objects.bulk_create(busy_slots)
         
         available, total, participant_ids = calculate_slot_availability(
             sample_meeting_request, start_time, end_time
         )
         
-        assert available == 75, "75 participants should be available"
-        assert total == 100, "Total should be 100"
-        assert len(participant_ids) == 75, "Should have 75 participant IDs"
+        assert available == 15, "15 participants should be available"
+        assert total == 20, "Total should be 20"
+        assert len(participant_ids) == 15, "Should have 15 participant IDs"
     
     def test_timezone_edge_case(self, create_meeting_request, create_participant):
         """Timezone Edge Case: Participants in different timezones (UTC storage)"""

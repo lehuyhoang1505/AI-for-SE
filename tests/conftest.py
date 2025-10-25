@@ -8,10 +8,18 @@ from django.utils import timezone
 from meetings.models import MeetingRequest, Participant, BusySlot, SuggestedSlot
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def utc():
-    """UTC timezone instance"""
+    """UTC timezone instance (session-scoped for performance)"""
     return pytz.UTC
+
+
+@pytest.fixture
+def create_utc_datetime():
+    """Helper to create UTC datetime quickly"""
+    def _create(year=2024, month=1, day=1, hour=9, minute=0, second=0):
+        return pytz.UTC.localize(datetime(year, month, day, hour, minute, second))
+    return _create
 
 
 @pytest.fixture
@@ -117,13 +125,4 @@ def create_suggested_slot(db):
     return _create
 
 
-@pytest.fixture
-def make_aware_utc():
-    """
-    Helper to create timezone-aware datetime in UTC
-    """
-    def _make_aware(dt):
-        if isinstance(dt, datetime):
-            return pytz.UTC.localize(dt) if dt.tzinfo is None else dt
-        return dt
-    return _make_aware
+
