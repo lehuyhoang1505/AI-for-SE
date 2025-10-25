@@ -1,45 +1,4 @@
-# Time Manager - Test Suite
-
-This repo contains comprehensive unit tests for the Time Manager project's **Calculating Overlapping Free Time Slots** feature.
-
-## Test Structure
-
-The tests are organized by function under test:
-
-- **`test_is_participant_available.py`** - Tests for checking individual participant availability (14 test cases)
-- **`test_calculate_slot_availability.py`** - Tests for calculating aggregate availability across participants (11 test cases)
-- **`test_generate_suggested_slots.py`** - Tests for generating time slot suggestions (18 test cases)
-- **`test_get_top_suggestions.py`** - Tests for retrieving top suggestions with filtering (18 test cases)
-- **`test_generate_time_slots.py`** - Tests for the time slot generation helper function (8 test cases)
-- **`conftest.py`** - Shared pytest fixtures and test utilities
-
-**Total: 69 comprehensive test cases**
-
-## Running the Tests
-
-### Prerequisites
-
-Install test dependencies:
-
-```bash
-pip install -r test/requirements-test.txt
-```
-
-Or install pytest-django directly:
-
-```bash
-pip install pytest pytest-django freezegun pytest-cov
-```
-
-### Run All Tests
-
-```bash
-pytest test/
-```
-
-### Run Specific Test File
-
-README for the Time Manager project (tests-focused)
+# README for the Time Manager project (tests-focused)
 
 This README explains how to run the project's tests locally and includes a small wrapper script (`run_tests.sh`) that sets the required environment (PYTHONPATH + Django test settings).
 
@@ -117,7 +76,3 @@ Related files
 - Application code: `src/meetings/`
 - Tests: `tests/`
 
-Local test result (this run)
-----------------------------
-
-Running the included script in this environment produced: `65 passed in 0.82s`.
