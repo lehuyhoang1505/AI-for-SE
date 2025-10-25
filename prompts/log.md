@@ -20,14 +20,18 @@ OUTPUT: [test_analysis.md](test_analysis.md)
 
 ### Promt:
 ```
-Generate comprehensive unit test cases for this Project's `Calculating overlapping free time slots` feature based on this `test_analysis.md` document. Output in a table with these columns `Category,Test Case, Input, Expected` and save into `test/test_design.md`
+Generate comprehensive unit test cases for this Project's `Calculating overlapping free time slots` feature based on this `test_analysis.md` document.
+Output in a table with these columns `Category,Test Case, Input, Expected` and save into `test/test_design.md`
 ```
 OUTPUT: [test_design.md](test_design.md)
 
 # 3. Sinh Test Code
 Promt: 
+
 ```
-Based on this document `test/test_design.md`, Create pytest unit tests for this Project's `Calculating overlapping free time slots` feature. save all test in `test` folder
+Based on this document `test/test_design.md`,
+Create pytest unit tests for this Project's `Calculating overlapping free time slots` feature.
+Save all test in `test` folder
 ```
 
 # 4. Chạy & Debug Tests
@@ -43,7 +47,8 @@ Help me fix this error while run unit test:
 # 5. Tối ưu & Mocking
 Promt:
 ```
-Looking into `tests/*.py`, check if the test is optimized and show what to optimize if needed. Then output to `prompts/optimize.md
+Looking into `tests/*.py`, check if the test is optimized and show what to optimize if needed.
+Then output to `prompts/optimize.md
 ```
 OUTPUT: [optimize.md](optimize.md)
 
