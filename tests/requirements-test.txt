@@ -1,0 +1,15 @@
+# Test Requirements for Time Manager Project
+
+# Testing framework
+pytest>=7.4.0
+pytest-django>=4.5.2
+
+# For freezing time in tests
+freezegun>=1.2.2
+
+# Coverage reporting
+pytest-cov>=4.1.0
+
+# Django and dependencies (if not already in main requirements)
+Django>=4.2.0
+pytz>=2023.3

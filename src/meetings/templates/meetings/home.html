@@ -1,0 +1,165 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Trang chủ - TimeWeave{% endblock %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="display-4 fw-bold mb-4">Tìm thời gian họp dễ dàng</h1>
+                <p class="lead mb-4">
+                    Giúp Leader tìm khung giờ phù hợp cho cuộc họp với nhóm 5-50 người chỉ trong vài phút. 
+                    Không cần đăng nhập, hỗ trợ múi giờ, hiển thị heatmap trực quan.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'create_request_step1' %}" class="btn btn-success btn-lg">
+                        <i class="bi bi-plus-circle"></i> Tạo yêu cầu mới
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-lg">
+                        Xem Dashboard
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="text-center">
+                    <i class="bi bi-calendar-event display-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <!-- Features Section -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2 class="fw-bold">Tính năng chính</h2>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-speedometer2 fs-3"></i>
+                    </div>
+                    <h5 class="card-title">Nhanh chóng</h5>
+                    <p class="card-text">Tạo cuộc hẹn cho nhóm 5-50 người trong vòng 3 phút</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-link-45deg fs-3"></i>
+                    </div>
+                    <h5 class="card-title">Không cần đăng nhập</h5>
+                    <p class="card-text">Chỉ cần chia sẻ link, thành viên điền thông tin ngay</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-globe fs-3"></i>
+                    </div>
+                    <h5 class="card-title">Hỗ trợ múi giờ</h5>
+                    <p class="card-text">Xử lý chênh lệch múi giờ tự động, chính xác</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-grid-3x3-gap fs-3"></i>
+                    </div>
+                    <h5 class="card-title">Heatmap trực quan</h5>
+                    <p class="card-text">Ô càng xanh đậm = càng nhiều người rảnh</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-danger text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-lightning fs-3"></i>
+                    </div>
+                    <h5 class="card-title">Tính toán nhanh</h5>
+                    <p class="card-text">Gợi ý khung giờ tối ưu < 500ms</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-download fs-3"></i>
+                    </div>
+                    <h5 class="card-title">Xuất lịch</h5>
+                    <p class="card-text">Xuất .ics hoặc tích hợp Google/Outlook Calendar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How it Works -->
+    <div class="row">
+        <div class="col-12 text-center mb-4">
+            <h2 class="fw-bold">Cách sử dụng</h2>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="text-center">
+                <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+                    <span class="fs-4 fw-bold">1</span>
+                </div>
+                <h5>Leader tạo yêu cầu</h5>
+                <p class="text-muted">Thiết lập thông tin cuộc họp, thời lượng, phạm vi ngày giờ</p>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="text-center">
+                <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+                    <span class="fs-4 fw-bold">2</span>
+                </div>
+                <h5>Thành viên điền lịch bận</h5>
+                <p class="text-muted">Mở link, chọn múi giờ, đánh dấu các khoảng thời gian bận</p>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="text-center">
+                <div class="step-number bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+                    <span class="fs-4 fw-bold">3</span>
+                </div>
+                <h5>Xem gợi ý & chốt lịch</h5>
+                <p class="text-muted">Hệ thống hiển thị heatmap và gợi ý khung giờ tối ưu</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <div class="card bg-light border-0 shadow-sm">
+                <div class="card-body py-5">
+                    <h3 class="mb-3">Sẵn sàng tìm thời gian họp?</h3>
+                    <p class="text-muted mb-4">Bắt đầu ngay với giao diện đơn giản, dễ sử dụng</p>
+                    <a href="{% url 'create_request_step1' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-calendar-plus"></i> Tạo yêu cầu ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

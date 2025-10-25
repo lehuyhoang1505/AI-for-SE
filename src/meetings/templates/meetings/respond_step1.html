@@ -1,0 +1,107 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Điền thông tin - {{ meeting_request.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-check"></i> Thông tin của bạn
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Meeting Info -->
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="bi bi-calendar-event"></i> {{ meeting_request.title }}</h5>
+                        {% if meeting_request.description %}
+                        <p class="mb-2">{{ meeting_request.description }}</p>
+                        {% endif %}
+                        <hr>
+                        <p class="mb-1"><strong>Thời lượng:</strong> {{ meeting_request.duration_minutes }} phút</p>
+                        <p class="mb-1"><strong>Phạm vi ngày:</strong> {{ meeting_request.date_range_start|date:"d/m/Y" }} - {{ meeting_request.date_range_end|date:"d/m/Y" }}</p>
+                        <p class="mb-0"><strong>Giờ làm việc:</strong> {{ meeting_request.work_hours_start|time:"H:i" }} - {{ meeting_request.work_hours_end|time:"H:i" }}</p>
+                    </div>
+
+                    <p class="lead mb-4">
+                        Vui lòng điền thông tin của bạn để bắt đầu chọn lịch bận
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-person"></i> Tên của bạn
+                            </label>
+                            {{ form.name }}
+                            <small class="form-text text-muted">Tùy chọn - giúp Leader biết ai đã trả lời</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-envelope"></i> Email
+                            </label>
+                            {{ form.email }}
+                            <small class="form-text text-muted">Tùy chọn - để nhận thông báo khi lịch họp được chốt</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-globe"></i> Múi giờ của bạn
+                            </label>
+                            {{ form.timezone }}
+                            <small class="form-text text-muted">
+                                Hệ thống đã tự động phát hiện múi giờ. Bạn có thể thay đổi nếu cần.
+                            </small>
+                        </div>
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                Tiếp theo <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="bi bi-shield-check text-success"></i> Quyền riêng tư</h6>
+                    <ul class="small mb-0">
+                        <li>Thông tin của bạn chỉ được sử dụng cho việc lên lịch họp này</li>
+                        <li>Tên của bạn có thể được hiển thị cho người tổ chức</li>
+                        <li>Bạn có thể quay lại chỉnh sửa thông tin bất cứ lúc nào</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-detect and set timezone
+$(document).ready(function() {
+    const timezoneSelect = $('select[name="timezone"]');
+    if (!timezoneSelect.val() || timezoneSelect.val() === 'Asia/Ho_Chi_Minh') {
+        const detectedTz = detectTimezone();
+        if (detectedTz) {
+            // Try to set detected timezone if available in options
+            const option = timezoneSelect.find(`option[value="${detectedTz}"]`);
+            if (option.length) {
+                timezoneSelect.val(detectedTz);
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

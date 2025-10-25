@@ -1,0 +1,329 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Điền lịch bận - {{ meeting_request.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-x"></i> Chọn các khoảng thời gian bận
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5>{{ meeting_request.title }}</h5>
+                        <p class="mb-0">Thời lượng họp: <strong>{{ meeting_request.duration_minutes }} phút</strong></p>
+                        <p class="mb-0">Phạm vi: {{ meeting_request.date_range_start }} đến {{ meeting_request.date_range_end }}</p>
+                        <p class="mb-0">Múi giờ của bạn: <strong id="participant-timezone">{{ participant.timezone }}</strong></p>
+
+                        
+                    </div>
+
+                    <div class="mb-3">
+                        <h5>Hướng dẫn:</h5>
+                        <ol>
+                            <li>Kéo chuột để chọn các khoảng thời gian bạn BẬN</li>
+                            <li>Click vào ô đã chọn để bỏ chọn</li>
+                            <li>Nhấn "Lưu" khi hoàn tất</li>
+                        </ol>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div id="calendar-grid" class="calendar-container mb-4">
+                        <div class="table-responsive">
+                            <table class="table table-bordered calendar-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 100px;">Thời gian</th>
+                                        {% for date in heatmap_data.dates %}
+                                        <th class="text-center">
+                                            {{ date|date:"D" }}<br>
+                                            <small>{{ date }}</small>
+                                        </th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody id="calendar-body">
+                                    {% for time in heatmap_data.time_slots %}
+                                    <tr>
+                                        <td class="time-label">{{ time }}</td>
+                                        {% for date in heatmap_data.dates %}
+                                        <td class="time-cell" data-date="{{ date }}" data-time="{{ time }}"
+                                            data-datetime="{{ date }}T{{ time }}">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Selected Busy Slots List -->
+                    <div class="mb-4">
+                        <h5>Danh sách thời gian bận đã chọn:</h5>
+                        <div id="busy-slots-list" class="alert alert-secondary">
+                            <em>Chưa có khoảng thời gian nào được chọn</em>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'respond_to_request' meeting_request.id %}?t={{ token }}&p={{ participant.id }}"
+                            class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                        <button type="button" id="save-btn" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Lưu lịch bận
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .calendar-container {
+        overflow-x: auto;
+    }
+
+    .calendar-table {
+        min-width: 800px;
+    }
+
+    .calendar-table th {
+        background: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .time-label {
+        font-weight: bold;
+        background: #f8f9fa;
+        white-space: nowrap;
+    }
+
+    .time-cell {
+        width: 60px;
+        height: 40px;
+        cursor: pointer;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+
+    .time-cell:hover {
+        background: #e9ecef;
+    }
+
+    .time-cell.busy {
+        background: #dc3545;
+        border-color: #b02a37;
+    }
+
+    .time-cell.busy:hover {
+        background: #c82333;
+    }
+
+    .time-cell.selecting {
+        background: #ffc107;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Debug info
+    console.log('Participant ID: {{ participant.id }}');
+    console.log('Participant Name: {{ participant.name }}');
+    console.log('Participant Email: {{ participant.email }}');
+    console.log('Busy Slots Count: {{ busy_slots.count }}');
+
+    let busySlots = [];
+    let isSelecting = false;
+    let selectionMode = null; // 'add' or 'remove'
+    let isDragging = false; // Flag to prevent click after drag
+
+
+    // Load existing busy slots
+    {% if busy_slots %}
+    busySlots = [
+        {% for slot in busy_slots %}
+    {
+        start: '{{ slot.start_time|date:"Y-m-d\TH:i" }}',
+            end: '{{ slot.end_time|date:"Y-m-d\TH:i" }}'
+    },
+    {% endfor %}
+];
+    {% endif %}
+    markBusySlotsOnCalendar();
+
+
+    // Mouse event handlers for drag selection
+    let startCell = null;
+
+    $('.time-cell').mousedown(function (e) {
+        e.preventDefault();
+        isSelecting = true;
+        isDragging = false;
+        startCell = this;
+
+        const $cell = $(this);
+        if ($cell.hasClass('busy')) {
+            selectionMode = 'remove';
+            $cell.removeClass('busy');
+        } else {
+            selectionMode = 'add';
+            $cell.addClass('busy selecting');
+        }
+    });
+
+    $('.time-cell').mouseenter(function () {
+        if (isSelecting && this !== startCell) {
+            isDragging = true; // User is dragging to multiple cells
+            const $cell = $(this);
+            if (selectionMode === 'add') {
+                $cell.addClass('busy selecting');
+            } else {
+                $cell.removeClass('busy');
+            }
+        }
+    });
+
+    $(document).mouseup(function () {
+        if (isSelecting) {
+            isSelecting = false;
+            $('.time-cell.selecting').removeClass('selecting');
+            updateBusySlotsList();
+            startCell = null;
+        }
+    });
+
+    function markBusySlotsOnCalendar() {
+        // Mark cells based on busySlots array
+        // Note: busySlots have datetime strings in format "2025-10-23T09:00"
+        busySlots.forEach(slot => {
+            $('.time-cell').each(function () {
+                const cellDateTime = $(this).data('datetime');
+                // Compare strings directly since they're in the same format and timezone
+                if (cellDateTime >= slot.start && cellDateTime < slot.end) {
+                    $(this).addClass('busy');
+                }
+            });
+        });
+        updateBusySlotsList();
+    }
+
+    function updateBusySlotsList() {
+        // Collect all busy cells and convert to time ranges
+        const busyCells = [];
+        $('.time-cell.busy').each(function () {
+            const datetime = $(this).data('datetime');
+            busyCells.push(datetime);
+        });
+
+        busyCells.sort();
+
+        // Merge consecutive cells into ranges
+        busySlots = [];
+        if (busyCells.length > 0) {
+            let rangeStart = busyCells[0];
+            let rangeEnd = addMinutes(busyCells[0], {{ meeting_request.step_size_minutes }});
+
+        for (let i = 1; i < busyCells.length; i++) {
+            const current = busyCells[i];
+            if (current === rangeEnd) {
+                // Consecutive, extend range
+                rangeEnd = addMinutes(current, {{ meeting_request.step_size_minutes }});
+        } else {
+            // Gap, save current range and start new one
+            busySlots.push({ start: rangeStart, end: rangeEnd });
+            rangeStart = current;
+            rangeEnd = addMinutes(current, {{ meeting_request.step_size_minutes }});
+    }
+            }
+    // Don't forget the last range
+    busySlots.push({ start: rangeStart, end: rangeEnd });
+        }
+
+    // Display list
+    if (busySlots.length === 0) {
+        $('#busy-slots-list').html('<em>Chưa có khoảng thời gian nào được chọn</em>');
+    } else {
+        let html = '<ul class="list-unstyled mb-0">';
+        busySlots.forEach((slot, index) => {
+            html += `<li><i class="bi bi-x-circle text-danger"></i> 
+                     ${formatDateTime(slot.start)} - ${formatDateTime(slot.end)}</li>`;
+        });
+        html += '</ul>';
+        $('#busy-slots-list').html(html);
+    }
+}
+
+    function addMinutes(datetime, minutes) {
+        // datetime is in format "2025-10-23T09:00"
+        // Parse and add minutes, keeping the same format
+        const parts = datetime.split('T');
+        const datePart = parts[0]; // "2025-10-23"
+        const timePart = parts[1]; // "09:00"
+
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+
+        // Create a date object (it will be in local browser time, but that's ok for calculations)
+        const date = new Date(year, month - 1, day, hour, minute);
+        date.setMinutes(date.getMinutes() + minutes);
+
+        // Format back to string
+        const newYear = date.getFullYear();
+        const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+        const newDay = String(date.getDate()).padStart(2, '0');
+        const newHour = String(date.getHours()).padStart(2, '0');
+        const newMinute = String(date.getMinutes()).padStart(2, '0');
+
+        return `${newYear}-${newMonth}-${newDay}T${newHour}:${newMinute}`;
+    }
+
+    function formatDateTime(datetime) {
+        // datetime is in format "2025-10-23T09:00"
+        // Parse it as a simple string since it's already in the participant's timezone
+        const parts = datetime.split('T');
+        const datePart = parts[0]; // "2025-10-23"
+        const timePart = parts[1]; // "09:00"
+
+        const [year, month, day] = datePart.split('-');
+        const [hour, minute] = timePart.split(':');
+
+        // Format as DD/MM/YYYY HH:MM
+        return `${day}/${month}/${year} ${hour}:${minute}`;
+    }
+
+    // Save button
+    $('#save-btn').click(function () {
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Đang lưu...');
+
+        $.ajax({
+            url: '{% url "save_busy_slots" meeting_request.id %}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                busy_slots: busySlots
+            }),
+            success: function (response) {
+                window.location.href = '{% url "response_complete" meeting_request.id %}';
+            },
+            error: function (xhr) {
+                alert('Có lỗi xảy ra: ' + (xhr.responseJSON?.error || 'Unknown error'));
+                btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> Lưu lịch bận');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Bước 2: Thêm người tham gia{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Progress Steps -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <div class="step-item completed">
+                        <div class="step-circle">✓</div>
+                        <div class="step-label">Cấu hình</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item active">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">Người tham gia</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Hoàn tất</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-people"></i> Bước 2: Thêm người tham gia (Tùy chọn)</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Lưu ý:</strong> Bạn có thể bỏ qua bước này và chia sẻ link công khai. 
+                        Người nhận link sẽ tự điền thông tin khi truy cập.
+                    </div>
+
+                    <!-- Current Participants -->
+                    {% if participants %}
+                    <div class="mb-4">
+                        <h5>Danh sách người tham gia ({{ participants.count }})</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Tên</th>
+                                        <th>Email</th>
+                                        <th>Múi giờ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for participant in participants %}
+                                    <tr>
+                                        <td>{{ participant.name|default:"—" }}</td>
+                                        <td>{{ participant.email|default:"—" }}</td>
+                                        <td>{{ participant.timezone }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Add Single Participant -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Thêm từng người</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_participant">
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Tên</label>
+                                        {{ form.name }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Email</label>
+                                        {{ form.email }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Múi giờ</label>
+                                        {{ form.timezone }}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Thêm
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Add -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Thêm hàng loạt</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_bulk">
+                                
+                                {{ bulk_form.participants_data }}
+                                <small class="form-text text-muted d-block mb-3">
+                                    {{ bulk_form.participants_data.help_text }}
+                                </small>
+                                
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Thêm tất cả
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'create_request_step1' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                        <div>
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="skip">
+                                <button type="submit" class="btn btn-outline-primary me-2">
+                                    Bỏ qua <i class="bi bi-skip-forward"></i>
+                                </button>
+                            </form>
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="next">
+                                <button type="submit" class="btn btn-primary">
+                                    Tiếp theo <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-item {
+    flex: 1;
+    text-align: center;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #dee2e6;
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 8px;
+}
+
+.step-item.active .step-circle {
+    background: #0d6efd;
+    color: white;
+}
+
+.step-item.completed .step-circle {
+    background: #198754;
+    color: white;
+}
+
+.step-label {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.step-item.active .step-label,
+.step-item.completed .step-label {
+    color: #0d6efd;
+    font-weight: bold;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: #dee2e6;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Cảm ơn - {{ meeting_request.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    
+                    <h2 class="text-success mb-3">Cảm ơn bạn đã trả lời!</h2>
+                    <p class="lead mb-4">Lịch bận của bạn đã được lưu thành công</p>
+
+                    {% if participant %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">
+                            <strong>{{ participant.name|default:"Bạn" }}</strong>, 
+                            chúng tôi đã ghi nhận lịch bận của bạn cho cuộc họp 
+                            <strong>{{ meeting_request.title }}</strong>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <!-- Current Status -->
+                    <div class="mb-4">
+                        <h5>Tiến độ phản hồi hiện tại:</h5>
+                        <div class="progress" style="height: 30px;">
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 style="width: {{ meeting_request.response_rate }}%">
+                                {{ meeting_request.response_rate }}%
+                            </div>
+                        </div>
+                        <p class="mt-2">
+                            <strong>{{ responded_count }}</strong> / 
+                            <strong>{{ total_count }}</strong> người đã trả lời
+                        </p>
+                    </div>
+
+                    {% if top_suggestions %}
+                    <hr class="my-4">
+                    
+                    <!-- Top Suggestions Preview -->
+                    <div class="mb-4">
+                        <h5><i class="bi bi-lightbulb"></i> Các khung giờ được gợi ý:</h5>
+                        <p class="text-muted">Dựa trên lịch bận của những người đã trả lời</p>
+                        
+                        <div class="list-group">
+                            {% for suggestion in top_suggestions|slice:":5" %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-start">
+                                        {% if forloop.first %}
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                        {% endif %}
+                                        <strong>
+                                            {{ suggestion.start_time|date:"d/m/Y H:i" }} - 
+                                            {{ suggestion.end_time|date:"H:i" }}
+                                        </strong>
+                                    </div>
+                                    <span class="badge {% if suggestion.availability_percentage >= 80 %}bg-success{% elif suggestion.availability_percentage >= 60 %}bg-primary{% else %}bg-secondary{% endif %} fs-6">
+                                        {{ suggestion.available_count }}/{{ suggestion.total_participants }} 
+                                        ({{ suggestion.availability_percentage }}%)
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Additional Info -->
+                    <div class="alert alert-light">
+                        <h6><i class="bi bi-info-circle"></i> Lưu ý:</h6>
+                        <ul class="text-start mb-0">
+                            <li>Bạn có thể quay lại và chỉnh sửa lịch bận của mình bất cứ lúc nào</li>
+                            <li>Leader sẽ chọn khung giờ phù hợp nhất dựa trên phản hồi của mọi người</li>
+                            <li>Bạn sẽ nhận được thông báo khi lịch họp được chốt (nếu đã cung cấp email)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-3 justify-content-center mt-4">
+                        <a href="{% url 'select_busy_times' meeting_request.id %}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Chỉnh sửa lịch bận
+                        </a>
+                        <a href="{% url 'home' %}" class="btn btn-secondary">
+                            <i class="bi bi-house"></i> Về trang chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Chỉnh sửa cài đặt - {{ meeting_request.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil-square"></i> Chỉnh sửa cài đặt cuộc họp
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Lưu ý:</strong> Thay đổi cài đặt có thể ảnh hưởng đến các gợi ý và lịch trình đã tạo.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-info-square"></i> Thông tin cơ bản</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        Tiêu đề <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger">{{ form.title.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        Mô tả
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.created_by_email.id_for_label }}" class="form-label">
+                                        Email người tạo
+                                    </label>
+                                    {{ form.created_by_email }}
+                                    {% if form.created_by_email.errors %}
+                                        <div class="text-danger">{{ form.created_by_email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Meeting Configuration -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-clock"></i> Cấu hình cuộc họp</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.duration_minutes.id_for_label }}" class="form-label">
+                                            Thời lượng (phút) <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.duration_minutes }}
+                                        {% if form.duration_minutes.errors %}
+                                            <div class="text-danger">{{ form.duration_minutes.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.timezone.id_for_label }}" class="form-label">
+                                            Múi giờ <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.timezone }}
+                                        {% if form.timezone.errors %}
+                                            <div class="text-danger">{{ form.timezone.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-calendar-range"></i> Phạm vi ngày</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.date_range_start.id_for_label }}" class="form-label">
+                                            Ngày bắt đầu <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.date_range_start }}
+                                        {% if form.date_range_start.errors %}
+                                            <div class="text-danger">{{ form.date_range_start.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.date_range_end.id_for_label }}" class="form-label">
+                                            Ngày kết thúc <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.date_range_end }}
+                                        {% if form.date_range_end.errors %}
+                                            <div class="text-danger">{{ form.date_range_end.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Working Hours -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-hourglass-split"></i> Giờ làm việc</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.work_hours_start.id_for_label }}" class="form-label">
+                                            Giờ bắt đầu <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.work_hours_start }}
+                                        {% if form.work_hours_start.errors %}
+                                            <div class="text-danger">{{ form.work_hours_start.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.work_hours_end.id_for_label }}" class="form-label">
+                                            Giờ kết thúc <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.work_hours_end }}
+                                        {% if form.work_hours_end.errors %}
+                                            <div class="text-danger">{{ form.work_hours_end.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-gear"></i> Tùy chọn nâng cao</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.step_size_minutes.id_for_label }}" class="form-label">
+                                        Bước quét (phút) <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.step_size_minutes }}
+                                    <small class="text-muted d-block">Khoảng cách giữa các khung giờ gợi ý</small>
+                                    {% if form.step_size_minutes.errors %}
+                                        <div class="text-danger">{{ form.step_size_minutes.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    {{ form.work_days_only }}
+                                    <label class="form-check-label" for="{{ form.work_days_only.id_for_label }}">
+                                        Chỉ ngày làm việc (Thứ 2 - Thứ 6)
+                                    </label>
+                                    {% if form.work_days_only.errors %}
+                                        <div class="text-danger">{{ form.work_days_only.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.response_deadline.id_for_label }}" class="form-label">
+                                        Hạn chót trả lời
+                                    </label>
+                                    {{ form.response_deadline }}
+                                    <small class="text-muted d-block">Để trống nếu không có hạn chót</small>
+                                    {% if form.response_deadline.errors %}
+                                        <div class="text-danger">{{ form.response_deadline.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Non-field Errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{% url 'view_request' meeting_request.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-update date range end when start date changes (minimum 1 day difference)
+document.getElementById('{{ form.date_range_start.id_for_label }}').addEventListener('change', function() {
+    const startDate = new Date(this.value);
+    const endDateInput = document.getElementById('{{ form.date_range_end.id_for_label }}');
+    const endDate = new Date(endDateInput.value);
+    
+    if (endDate <= startDate) {
+        const newEndDate = new Date(startDate);
+        newEndDate.setDate(newEndDate.getDate() + 1);
+        endDateInput.value = newEndDate.toISOString().split('T')[0];
+    }
+});
+
+// Auto-update work hours end when start time changes (minimum 1 hour difference)
+document.getElementById('{{ form.work_hours_start.id_for_label }}').addEventListener('change', function() {
+    const startTime = this.value;
+    const endTimeInput = document.getElementById('{{ form.work_hours_end.id_for_label }}');
+    const endTime = endTimeInput.value;
+    
+    if (endTime <= startTime) {
+        const [hours, minutes] = startTime.split(':');
+        const newHours = (parseInt(hours) + 1) % 24;
+        endTimeInput.value = `${String(newHours).padStart(2, '0')}:${minutes}`;
+    }
+});
+</script>
+{% endblock %}

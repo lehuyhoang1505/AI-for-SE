@@ -1,0 +1,120 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Yêu cầu đã tạo thành công!{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    
+                    <h2 class="text-success mb-3">Yêu cầu đã được tạo thành công!</h2>
+                    <p class="lead mb-4">{{ meeting_request.title }}</p>
+
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="bi bi-info-circle"></i> Bước tiếp theo:</h5>
+                        <p class="mb-0">Chia sẻ link dưới đây cho các thành viên để họ điền lịch bận của mình</p>
+                    </div>
+
+                    <!-- Share Link -->
+                    <div class="share-link-box mb-4">
+                        <label class="form-label fw-bold">Link chia sẻ:</label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="share-link" 
+                                   value="{{ share_url }}" 
+                                   readonly>
+                            <button class="btn btn-primary copy-link-btn" 
+                                    type="button"
+                                    data-link="{{ share_url }}">
+                                <i class="bi bi-clipboard"></i> Sao chép
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-2">Thời lượng họp</h6>
+                                    <h4 class="mb-0">{{ meeting_request.duration_minutes }} phút</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-2">Phạm vi tìm kiếm</h6>
+                                    <h6 class="mb-0">
+                                        {{ meeting_request.date_range_start|date:"d/m/Y" }} - 
+                                        {{ meeting_request.date_range_end|date:"d/m/Y" }}
+                                    </h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if meeting_request.response_deadline %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-clock"></i> 
+                        Hạn chót nhận phản hồi: <strong>{{ meeting_request.response_deadline|date:"d/m/Y H:i" }}</strong>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="{% url 'view_request' meeting_request.id %}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-eye"></i> Xem chi tiết & theo dõi
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-speedometer2"></i> Về Dashboard
+                        </a>
+                        <a href="{% url 'create_request_step1' %}" class="btn btn-outline-success btn-lg">
+                            <i class="bi bi-plus-circle"></i> Tạo yêu cầu mới
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Hướng dẫn sử dụng</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li class="mb-2">
+                            <strong>Chia sẻ link:</strong> Gửi link trên qua Messenger, Email, Slack, hoặc bất kỳ kênh nào bạn muốn
+                        </li>
+                        <li class="mb-2">
+                            <strong>Theo dõi tiến độ:</strong> Vào trang "Xem chi tiết" để theo dõi số người đã điền lịch
+                        </li>
+                        <li class="mb-2">
+                            <strong>Xem gợi ý:</strong> Hệ thống sẽ tự động tính toán và hiển thị các khung giờ tối ưu
+                        </li>
+                        <li class="mb-2">
+                            <strong>Chốt lịch:</strong> Khi đủ người trả lời, chọn khung giờ phù hợp và chốt lịch họp
+                        </li>
+                        <li class="mb-0">
+                            <strong>Xuất lịch:</strong> Xuất file .ics hoặc thêm vào Google/Outlook Calendar
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-select link on click
+$('#share-link').click(function() {
+    this.select();
+});
+</script>
+{% endblock %}

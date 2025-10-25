@@ -1,0 +1,195 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Bước 1: Cấu hình cuộc họp{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Progress Steps -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <div class="step-item active">
+                        <div class="step-circle">1</div>
+                        <div class="step-label">Cấu hình</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">Người tham gia</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Hoàn tất</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-gear"></i> Bước 1: Thiết lập thông tin cuộc họp</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Info -->
+                        <h5 class="mb-3">Thông tin cơ bản</h5>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger">{{ form.title.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.created_by_email.label }}</label>
+                            {{ form.created_by_email }}
+                            <small class="form-text text-muted">Email của bạn để nhận thông báo (tùy chọn)</small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Meeting Configuration -->
+                        <h5 class="mb-3">Cấu hình cuộc họp</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{{ form.duration_minutes.label }}</label>
+                                {{ form.duration_minutes }}
+                                <small class="form-text text-muted">Thời lượng cuộc họp (phút)</small>
+                                {% if form.duration_minutes.errors %}
+                                    <div class="text-danger">{{ form.duration_minutes.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{{ form.timezone.label }}</label>
+                                {{ form.timezone }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{{ form.date_range_start.label }}</label>
+                                {{ form.date_range_start }}
+                                {% if form.date_range_start.errors %}
+                                    <div class="text-danger">{{ form.date_range_start.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{{ form.date_range_end.label }}</label>
+                                {{ form.date_range_end }}
+                                {% if form.date_range_end.errors %}
+                                    <div class="text-danger">{{ form.date_range_end.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.work_hours_start.label }}</label>
+                                {{ form.work_hours_start }}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.work_hours_end.label }}</label>
+                                {{ form.work_hours_end }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.step_size_minutes.label }}</label>
+                                {{ form.step_size_minutes }}
+                                <small class="form-text text-muted">Bước quét để tìm khung giờ</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.response_deadline.label }}</label>
+                                {{ form.response_deadline }}
+                                <small class="form-text text-muted">Hạn chót nhận phản hồi (tùy chọn)</small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Options -->
+                        <h5 class="mb-3">Tùy chọn</h5>
+                        <div class="form-check mb-3">
+                            {{ form.work_days_only }}
+                            <label class="form-check-label">
+                                {{ form.work_days_only.label }} (Thứ 2 - Thứ 6)
+                            </label>
+                        </div>
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                Tiếp theo <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-item {
+    flex: 1;
+    text-align: center;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #dee2e6;
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 8px;
+}
+
+.step-item.active .step-circle {
+    background: #0d6efd;
+    color: white;
+}
+
+.step-label {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.step-item.active .step-label {
+    color: #0d6efd;
+    font-weight: bold;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: #dee2e6;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}

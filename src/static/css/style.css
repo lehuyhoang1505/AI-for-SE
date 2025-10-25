@@ -1,0 +1,447 @@
+/* Main stylesheet for TimeWeave */
+
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0a58ca 100%);
+    min-height: 400px;
+}
+
+/* Cards */
+.card {
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+.btn-lg {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+}
+
+/* Heatmap Styles */
+.heatmap-container {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+.heatmap-table {
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.heatmap-table th {
+    background: #e9ecef;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border: 1px solid #dee2e6;
+}
+
+.heatmap-table td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+    min-width: 60px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.heatmap-table tbody td:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1;
+    position: relative;
+}
+
+.heatmap-cell {
+    width: 60px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Heatmap levels - Green scale */
+.heatmap-level-0 {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.heatmap-level-1 {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.heatmap-level-2 {
+    background: #a5d6a7;
+    color: #2e7d32;
+}
+
+.heatmap-level-3 {
+    background: #81c784;
+    color: #1b5e20;
+}
+
+.heatmap-level-4 {
+    background: #66bb6a;
+    color: #1b5e20;
+}
+
+.heatmap-level-5 {
+    background: #4caf50;
+    color: white;
+}
+
+/* Emerald scale for heatmap (Tailwind-like) */
+/* Using !important to override Bootstrap table cell backgrounds */
+.heatmap-table td.bg-emerald-100,
+td.bg-emerald-100 {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.heatmap-table td.bg-emerald-200,
+td.bg-emerald-200 {
+    background-color: #a7f3d0 !important;
+    color: #065f46 !important;
+}
+
+.heatmap-table td.bg-emerald-300,
+td.bg-emerald-300 {
+    background-color: #6ee7b7 !important;
+    color: #065f46 !important;
+}
+
+.heatmap-table td.bg-emerald-400,
+td.bg-emerald-400 {
+    background-color: #34d399 !important;
+    color: #064e3b !important;
+}
+
+.heatmap-table td.bg-emerald-500,
+td.bg-emerald-500 {
+    background-color: #10b981 !important;
+    color: white !important;
+}
+
+/* Heatmap legend boxes */
+.heatmap-legend {
+    width: 30px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+}
+
+.heatmap-legend.bg-emerald-100 {
+    background-color: #d1fae5 !important;
+}
+
+.heatmap-legend.bg-emerald-200 {
+    background-color: #a7f3d0 !important;
+}
+
+.heatmap-legend.bg-emerald-300 {
+    background-color: #6ee7b7 !important;
+}
+
+.heatmap-legend.bg-emerald-400 {
+    background-color: #34d399 !important;
+}
+
+.heatmap-legend.bg-emerald-500 {
+    background-color: #10b981 !important;
+}
+
+/* Sticky column for heatmap */
+.sticky-col {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa;
+    z-index: 5;
+    font-weight: 600;
+}
+
+/* Collapsible header button */
+.card-header .btn-link {
+    padding: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.card-header .btn-link:hover {
+    opacity: 0.9;
+}
+
+.card-header .btn-link:focus {
+    box-shadow: none;
+}
+
+.card-header .btn-link .bi-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.card-header .btn-link:not(.collapsed) .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Calendar Grid for Busy Time Selection */
+.calendar-table {
+    border-collapse: collapse;
+}
+
+.calendar-table th,
+.calendar-table td {
+    border: 1px solid #dee2e6;
+}
+
+.time-cell {
+    min-width: 50px;
+    height: 35px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.time-cell.busy {
+    background: var(--danger-color);
+    color: white;
+}
+
+.time-cell.available {
+    background: var(--success-color);
+    color: white;
+}
+
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin: 30px 0;
+}
+
+.step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.step-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    border: 3px solid transparent;
+}
+
+.step-item.active .step-circle {
+    background: var(--primary-color);
+    color: white;
+    border-color: #0a58ca;
+}
+
+.step-item.completed .step-circle {
+    background: var(--success-color);
+    color: white;
+}
+
+.step-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.step-item.active .step-label {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Suggestions List */
+.suggestion-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+    border-left-color: var(--primary-color);
+    background: var(--light-color);
+}
+
+.suggestion-item.top-suggestion {
+    border-left-color: var(--success-color);
+    background: #f0fdf4;
+}
+
+.availability-badge {
+    font-size: 1rem;
+    padding: 5px 15px;
+}
+
+/* Response Progress */
+.progress-bar-custom {
+    height: 30px;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Participant List */
+.participant-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 3px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+}
+
+.participant-responded {
+    background: #d1f4e0;
+    color: #0f5132;
+}
+
+.participant-pending {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+/* Share Link Box */
+.share-link-box {
+    background: var(--light-color);
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px dashed var(--primary-color);
+}
+
+.share-link-box input {
+    border: none;
+    background: white;
+    font-family: monospace;
+}
+
+/* Loading Spinner */
+.spinner-custom {
+    border: 3px solid var(--light-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .heatmap-cell {
+        width: 45px;
+        height: 35px;
+        font-size: 0.75rem;
+    }
+    
+    .calendar-table {
+        font-size: 0.85rem;
+    }
+    
+    .time-cell {
+        min-width: 40px;
+        height: 30px;
+    }
+}
+
+/* Tooltips */
+.tooltip-custom {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-custom .tooltip-text {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.tooltip-custom:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Feature Icons */
+.feature-icon {
+    width: 70px;
+    height: 70px;
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    footer,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+}

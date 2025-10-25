@@ -1,0 +1,385 @@
+{% extends 'meetings/base.html' %}
+{% load meeting_filters %}
+
+{% block title %}{{ meeting_request.title }} - Chi tiết{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2>{{ meeting_request.title }}</h2>
+                    {% if meeting_request.description %}
+                    <p class="text-muted">{{ meeting_request.description }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if meeting_request.status == 'active' %}
+                        <span class="badge bg-success fs-6">Đang hoạt động</span>
+                    {% elif meeting_request.status == 'locked' %}
+                        <span class="badge bg-primary fs-6">Đã chốt</span>
+                    {% else %}
+                        <span class="badge bg-secondary fs-6">{{ meeting_request.get_status_display }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Thời lượng</h6>
+                    <h3 class="mb-0">{{ meeting_request.duration_minutes }}'</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Số người</h6>
+                    <h3 class="mb-0">{{ participants.count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Đã trả lời</h6>
+                    <h3 class="mb-0">{{ responded.count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Hoàn thành</h6>
+                    <h3 class="mb-0 {% if meeting_request.response_rate >= 80 %}text-success{% elif meeting_request.response_rate >= 50 %}text-primary{% else %}text-warning{% endif %}">
+                        {{ meeting_request.response_rate }}%
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h6 class="mb-3">Tiến độ phản hồi</h6>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar {% if meeting_request.response_rate >= 80 %}bg-success{% elif meeting_request.response_rate >= 50 %}bg-primary{% else %}bg-warning{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ meeting_request.response_rate }}%">
+                    {{ responded.count }} / {{ participants.count }} người
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Link -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-share"></i> Link chia sẻ</h5>
+        </div>
+        <div class="card-body">
+            <div class="input-group">
+                <input type="text" 
+                       class="form-control" 
+                       id="share-link" 
+                       value="{{ request.scheme }}://{{ request.get_host }}{{ meeting_request.get_share_url }}" 
+                       readonly>
+                <button class="btn btn-success copy-link-btn" 
+                        type="button"
+                        data-link="{{ request.scheme }}://{{ request.get_host }}{{ meeting_request.get_share_url }}">
+                    <i class="bi bi-clipboard"></i> Sao chép
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Suggestions -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-stars"></i> Khung giờ được gợi ý</h5>
+        </div>
+        <div class="card-body">
+            {% if top_suggestions %}
+            <div class="list-group">
+                {% for suggestion in top_suggestions %}
+                <!-- Only show locked suggestion when status is 'locked', otherwise show all -->
+                {% if meeting_request.status == 'locked' %}
+                    {% if suggestion.is_locked %}
+                    <div class="list-group-item border-success border-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    {{ suggestion.start_time|date:"l, d/m/Y H:i" }} - {{ suggestion.end_time|time:"H:i" }}
+                                </h5>
+                                <p class="mb-1">
+                                    <i class="bi bi-people"></i> 
+                                    <strong>{{ suggestion.available_count }}</strong> / {{ suggestion.total_participants }} người rảnh
+                                </p>
+                                <small class="text-muted">Múi giờ: {{ meeting_request.timezone }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if suggestion.availability_percentage >= 80 %}bg-success{% elif suggestion.availability_percentage >= 60 %}bg-primary{% else %}bg-secondary{% endif %} fs-4 mb-2">
+                                    {{ suggestion.availability_percentage }}%
+                                </span>
+                                <span class="badge bg-primary"><i class="bi bi-check-circle"></i> Đã chốt</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% else %}
+                <div class="list-group-item {% if forloop.first %}border-success border-3{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                {% if forloop.first %}<i class="bi bi-star-fill text-warning"></i> {% endif %}
+                                {{ suggestion.start_time|date:"l, d/m/Y H:i" }} - {{ suggestion.end_time|time:"H:i" }}
+                            </h5>
+                            <p class="mb-1">
+                                <i class="bi bi-people"></i> 
+                                <strong>{{ suggestion.available_count }}</strong> / {{ suggestion.total_participants }} người rảnh
+                            </p>
+                            <small class="text-muted">Múi giờ: {{ meeting_request.timezone }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if suggestion.availability_percentage >= 80 %}bg-success{% elif suggestion.availability_percentage >= 60 %}bg-primary{% else %}bg-secondary{% endif %} fs-4 mb-2">
+                                {{ suggestion.availability_percentage }}%
+                            </span>
+                            {% if not suggestion.is_locked and meeting_request.status == 'active' %}
+                            <a href="{% url 'lock_slot' meeting_request.id suggestion.id %}" 
+                               class="btn btn-sm btn-outline-primary d-block"
+                               onclick="return confirm('Bạn có chắc chốt khung giờ này?')">
+                                <i class="bi bi-lock"></i> Chốt lịch
+                            </a>
+                            {% elif suggestion.is_locked %}
+                            <span class="badge bg-primary"><i class="bi bi-check-circle"></i> Đã chốt</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle"></i> 
+                Chưa có đủ dữ liệu để hiển thị gợi ý. Đợi thêm người trả lời.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <button class="btn btn-link text-white text-decoration-none w-100 text-start collapsed" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#heatmapCollapse" 
+                        aria-expanded="false" 
+                        aria-controls="heatmapCollapse">
+                    <i class="bi bi-grid-3x3-gap"></i> Heatmap - Tình trạng rảnh
+                    <i class="bi bi-chevron-down float-end"></i>
+                </button>
+            </h5>
+        </div>
+        <div class="collapse" id="heatmapCollapse">
+            <div class="card-body">
+                {% if heatmap_data.heatmap %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm heatmap-table">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col">Thời gian</th>
+                                {% for date_str in heatmap_data.dates %}
+                                <th class="text-center">
+                                    {{ date_str|format_date_header }}
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for time_slot in heatmap_data.time_slots %}
+                            <tr>
+                                <td class="sticky-col"><strong>{{ time_slot }}</strong></td>
+                                {% for date in heatmap_data.dates %}
+                                {% with cell=heatmap_data.heatmap|get_item:date|get_item:time_slot %}
+                                {% if cell %}
+                                {% if cell.total > 0 %}
+                                {% with score_pct=cell.percentage %}
+                                <td class="text-center p-2 {% if score_pct == 0 %}bg-white{% elif score_pct >= 90 %}bg-emerald-500{% elif score_pct >= 75 %}bg-emerald-400{% elif score_pct >= 50 %}bg-emerald-300{% elif score_pct >= 25 %}bg-emerald-200{% else %}bg-emerald-100{% endif %}"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="{{ cell.available }} / {{ cell.total }} người rảnh ({{ score_pct }}%)">
+                                    <small class="fw-bold">{{ cell.available }}/{{ cell.total }}</small>
+                                </td>
+                                {% endwith %}
+                                {% else %}
+                                <td class="text-center bg-light p-2">
+                                    <small class="text-muted">-</small>
+                                </td>
+                                {% endif %}
+                                {% else %}
+                                <td class="text-center bg-light p-2">
+                                    <small class="text-muted">-</small>
+                                </td>
+                                {% endif %}
+                                {% endwith %}
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Legend -->
+                <div class="mt-3">
+                    <h6>Chú thích:</h6>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <div class="d-flex align-items-center">
+                            <div class="heatmap-legend bg-white border"></div>
+                            <small class="ms-2">0%</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="heatmap-legend bg-emerald-100"></div>
+                            <small class="ms-2">1-25%</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="heatmap-legend bg-emerald-200"></div>
+                            <small class="ms-2">25-50%</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="heatmap-legend bg-emerald-300"></div>
+                            <small class="ms-2">50-75%</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="heatmap-legend bg-emerald-400"></div>
+                            <small class="ms-2">75-90%</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="heatmap-legend bg-emerald-500"></div>
+                            <small class="ms-2">90-100%</small>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">
+                        <small><i class="bi bi-info-circle"></i> Múi giờ: {{ heatmap_data.timezone }}</small>
+                    </p>
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    Chưa có dữ liệu để hiển thị heatmap.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Participants Status -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Đã trả lời ({{ responded.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if responded %}
+                    <div class="list-group list-group-flush">
+                        {% for participant in responded %}
+                        <div class="list-group-item">
+                            <i class="bi bi-person-check text-success"></i>
+                            <strong>{{ participant.name|default:"Ẩn danh" }}</strong>
+                            {% if participant.email %}
+                            <br><small class="text-muted">{{ participant.email }}</small>
+                            {% endif %}
+                            <br><small class="text-muted">
+                                <i class="bi bi-clock"></i> {{ participant.responded_at|date:"d/m H:i" }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Chưa có ai trả lời</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-hourglass-split"></i> Chưa trả lời ({{ not_responded.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if not_responded %}
+                    <div class="list-group list-group-flush">
+                        {% for participant in not_responded %}
+                        <div class="list-group-item">
+                            <i class="bi bi-person text-muted"></i>
+                            {{ participant.name|default:participant.email|default:"Người tham gia" }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0">
+                        <i class="bi bi-check-all"></i> Tất cả đã trả lời!
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Về Dashboard
+                </a>
+                <a href="{% url 'edit_request' meeting_request.id %}" class="btn btn-warning">
+                    <i class="bi bi-pencil-square"></i> Chỉnh sửa cài đặt
+                </a>
+                <button class="btn btn-primary copy-link-btn"
+                        data-link="{{ request.scheme }}://{{ request.get_host }}{{ meeting_request.get_share_url }}">
+                    <i class="bi bi-share"></i> Chia sẻ link
+                </button>
+                <button class="btn btn-info" onclick="window.print()">
+                    <i class="bi bi-printer"></i> In trang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-select link on click
+$('#share-link').click(function() {
+    this.select();
+});
+
+// Initialize Bootstrap tooltips for heatmap
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}
