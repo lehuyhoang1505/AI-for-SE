@@ -2,7 +2,7 @@
 
 CORE FEATURE: Tính toán các khoảng thời gian rảnh
 
-### Promt:
+### prompt:
 ```
 Analyze this Project's `Calculating overlapping free time slots` feature and identify all functions that need unit testing:
 
@@ -18,7 +18,7 @@ OUTPUT: [test_analysis.md](test_analysis.md)
 
 # 2. Thiết kế test case:
 
-### Promt:
+### prompt:
 ```
 Generate comprehensive unit test cases for this Project's `Calculating overlapping free time slots` feature based on this `test_analysis.md` document.
 Output in a table with these columns `Category,Test Case, Input, Expected` and save into `test/test_design.md`
@@ -26,7 +26,7 @@ Output in a table with these columns `Category,Test Case, Input, Expected` and s
 OUTPUT: [test_design.md](test_design.md)
 
 # 3. Sinh Test Code
-Promt: 
+prompt: 
 
 ```
 Based on this document `test/test_design.md`,
@@ -38,17 +38,23 @@ Save all test in `test` folder
 - Chạy lệnh: `run_test.sh`
 => lỗi: `ModuleNotFoundError: No module named 'pytests'`
 
-Promt: 
+prompt: 
 ```
 Help me fix this error while run unit test:
 `ModuleNotFoundError: No module named 'pytests'`
 ```
 
 # 5. Tối ưu & Mocking
-Promt:
+prompt:
 ```
 Looking into `tests/*.py`, check if the test is optimized and show what to optimize if needed.
 Then output to `prompts/optimize.md
 ```
 OUTPUT: [optimize.md](optimize.md)
 
+- Từ output trên, bắt đầu cho AI tối ưu.
+
+prompt:
+```
+from this document, Optimize tests.
+```
