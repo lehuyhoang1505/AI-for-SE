@@ -333,10 +333,19 @@ def lock_slot(request, request_id, slot_id):
     if meeting_request.created_by_email != request.user.email:
         return HttpResponseForbidden('You do not have permission to lock this slot')
     
-    slot = get_object_or_404(SuggestedSlot, id=slot_id, meeting_request=meeting_request)
+    
+    # Try to get the slot by ID
+    try:
+        slot = SuggestedSlot.objects.get(id=slot_id, meeting_request=meeting_request)
+    except SuggestedSlot.DoesNotExist:
+        # Slot doesn't exist - it was regenerated after the page was loaded
+        # Ask the user to reload and select again
+        messages.warning(request, 'Dữ liệu đã thay đổi do có người cập nhật lịch. Vui lòng tải lại trang và chọn khung giờ phù hợp.')
+        return redirect('view_request', request_id=request_id)
+    
     
     # Delete all other slots (keep only the locked slot)
-    SuggestedSlot.objects.filter(meeting_request=meeting_request).exclude(id=slot_id).delete()
+    SuggestedSlot.objects.filter(meeting_request=meeting_request).exclude(id=slot.id).delete()
     
     # Lock this slot
     slot.is_locked = True
