@@ -61,3 +61,8 @@ htmlcov/
 *.bak
 *.tmp
 node_modules/
+LOGIN_FEATURE_SUMMARY.md
+.gitignore
+QUICK_REFERENCE.md
+TESTING_CHECKLIST.md
+EMAIL_*.md

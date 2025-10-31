@@ -8,19 +8,25 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from datetime import datetime, timedelta
 import json
 import uuid
 
 from .models import MeetingRequest, Participant, BusySlot, SuggestedSlot
+from .user_profile import UserProfile
 from .forms import (
     MeetingRequestForm, ParticipantForm, BulkParticipantForm,
-    BusySlotForm, ParticipantResponseForm
+    BusySlotForm, ParticipantResponseForm, UserRegistrationForm
 )
 from .utils import (
     generate_suggested_slots, get_top_suggestions, get_heatmap_data,
     parse_busy_slots_from_json
 )
+from .email_utils import send_verification_email, send_meeting_invitation_email, send_meeting_locked_notification, send_password_reset_email
 
 
 def get_or_create_creator_id(request):
@@ -33,6 +39,185 @@ def get_or_create_creator_id(request):
 
 
 # =============================================================================
+# AUTHENTICATION VIEWS
+# =============================================================================
+
+def user_login(request):
+    """Login page"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                # Check if email is verified
+                profile = getattr(user, 'profile', None)
+                if profile and not profile.email_verified:
+                    messages.error(
+                        request, 
+                        'Email chưa được xác thực. Vui lòng kiểm tra email và xác thực tài khoản trước khi đăng nhập.'
+                    )
+                    # Add link to resend verification
+                    resend_link = f'<a href="/resend-verification/?email={user.email}" class="btn btn-sm btn-primary">Gửi lại email xác thực</a>'
+                    messages.info(
+                        request,
+                        resend_link,
+                        extra_tags='safe'
+                    )
+                else:
+                    login(request, user)
+                    messages.success(request, f'Chào mừng {username}!')
+                    # Redirect to next parameter or dashboard
+                    next_url = request.GET.get('next', 'dashboard')
+                    return redirect(next_url)
+        else:
+            messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng')
+    else:
+        form = AuthenticationForm()
+    
+    return render(request, 'meetings/login.html', {'form': form})
+
+
+def user_register(request):
+    """Registration page"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_active = True  # User can exist but can't login until verified
+            user.save()
+            
+            # Create user profile (should be auto-created by signal, but ensure it exists)
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            
+            # Generate verification token
+            token = profile.generate_verification_token()
+            
+            # Build verification URL
+            verification_url = request.build_absolute_uri(
+                f'/verify-email/{token}/'
+            )
+            
+            # Send verification email
+            send_verification_email(user, verification_url)
+            
+            messages.success(
+                request, 
+                f'Đăng ký thành công! Một email xác thực đã được gửi đến {user.email}. '
+                'Vui lòng kiểm tra email và xác thực tài khoản để đăng nhập.'
+            )
+            return redirect('login')
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'meetings/register.html', {'form': form})
+
+
+def user_logout(request):
+    """Logout"""
+    logout(request)
+    messages.success(request, 'Đã đăng xuất thành công')
+    return redirect('home')
+
+
+def forgot_password(request):
+    """Request password reset"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        
+        if not email:
+            messages.error(request, 'Vui lòng nhập địa chỉ email.')
+            return render(request, 'meetings/forgot_password.html')
+        
+        try:
+            user = User.objects.get(email=email)
+            profile = user.profile
+            
+            # Generate password reset token
+            token = profile.generate_password_reset_token()
+            
+            # Build reset URL
+            reset_url = request.build_absolute_uri(
+                f'/reset-password/{token}/'
+            )
+            
+            # Send password reset email
+            send_password_reset_email(user, reset_url)
+            
+            messages.success(
+                request,
+                f'Email đặt lại mật khẩu đã được gửi đến {email}. Vui lòng kiểm tra hộp thư của bạn.'
+            )
+            return redirect('login')
+            
+        except User.DoesNotExist:
+            # Don't reveal if email exists or not for security
+            messages.success(
+                request,
+                'Nếu email này tồn tại trong hệ thống, một email đặt lại mật khẩu sẽ được gửi đến.'
+            )
+            return redirect('login')
+    
+    # GET request - show form
+    return render(request, 'meetings/forgot_password.html')
+
+
+def reset_password(request, token):
+    """Reset password with token"""
+    try:
+        profile = UserProfile.objects.get(password_reset_token=token)
+        
+        # Check if token is still valid
+        if not profile.is_password_reset_token_valid():
+            messages.error(request, 'Link đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu link mới.')
+            return redirect('forgot_password')
+        
+        if request.method == 'POST':
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            
+            if not password1 or not password2:
+                messages.error(request, 'Vui lòng nhập đầy đủ thông tin.')
+                return render(request, 'meetings/reset_password.html', {'token': token})
+            
+            if password1 != password2:
+                messages.error(request, 'Mật khẩu không khớp.')
+                return render(request, 'meetings/reset_password.html', {'token': token})
+            
+            if len(password1) < 8:
+                messages.error(request, 'Mật khẩu phải có ít nhất 8 ký tự.')
+                return render(request, 'meetings/reset_password.html', {'token': token})
+            
+            # Set new password
+            user = profile.user
+            user.set_password(password1)
+            user.save()
+            
+            # Clear token
+            profile.clear_password_reset_token()
+            
+            messages.success(request, 'Mật khẩu đã được đặt lại thành công! Bạn có thể đăng nhập ngay bây giờ.')
+            return redirect('login')
+        
+        # GET request - show form
+        return render(request, 'meetings/reset_password.html', {'token': token})
+        
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Link đặt lại mật khẩu không hợp lệ.')
+        return redirect('forgot_password')
+
+
+# =============================================================================
 # HOME & DASHBOARD
 # =============================================================================
 
@@ -41,13 +226,13 @@ def home(request):
     return render(request, 'meetings/home.html')
 
 
+@login_required
 def dashboard(request):
     """Leader dashboard showing all their meeting requests"""
-    # Get creator ID from session
-    creator_id = get_or_create_creator_id(request)
-    
-    # Filter requests by creator_id
-    recent_requests = MeetingRequest.objects.filter(creator_id=creator_id).order_by('-created_at')[:20]
+    # Filter requests by the logged-in user
+    recent_requests = MeetingRequest.objects.filter(
+        created_by_email=request.user.email
+    ).order_by('-created_at')[:20]
     
     # Add response counts and share URL to each request for template
     for req in recent_requests:
@@ -66,14 +251,16 @@ def dashboard(request):
 # LEADER WORKFLOW - CREATE REQUEST (3-STEP WIZARD)
 # =============================================================================
 
+@login_required
 def create_request_step1(request):
     """Step 1: Meeting configuration"""
     if request.method == 'POST':
         form = MeetingRequestForm(request.POST)
         if form.is_valid():
             meeting_request = form.save(commit=False)
-            # Set creator_id from session
-            meeting_request.creator_id = get_or_create_creator_id(request)
+            # Set creator email from logged-in user
+            meeting_request.created_by_email = request.user.email
+            meeting_request.creator_id = str(request.user.id)
             meeting_request.save()
             # Store ID in session for next steps
             request.session['meeting_request_id'] = str(meeting_request.id)
@@ -89,12 +276,14 @@ def create_request_step1(request):
             'work_hours_end': '18:00',
             'step_size_minutes': 30,
             'work_days_only': True,
+            'created_by_email': request.user.email,
         }
         form = MeetingRequestForm(initial=initial)
     
     return render(request, 'meetings/create_step1.html', {'form': form})
 
 
+@login_required
 def create_request_step2(request):
     """Step 2: Add participants (optional)"""
     meeting_request_id = request.session.get('meeting_request_id')
@@ -172,6 +361,7 @@ def create_request_step2(request):
     })
 
 
+@login_required
 def create_request_step3(request):
     """Step 3: Review and finalize"""
     meeting_request_id = request.session.get('meeting_request_id')
@@ -199,9 +389,15 @@ def create_request_step3(request):
     })
 
 
+@login_required
 def request_created(request, request_id):
     """Success page after creating request"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to view this request')
+    
     share_url = request.build_absolute_uri(meeting_request.get_share_url())
     
     return render(request, 'meetings/request_created.html', {
@@ -214,9 +410,14 @@ def request_created(request, request_id):
 # LEADER WORKFLOW - VIEW & MANAGE REQUEST
 # =============================================================================
 
+@login_required
 def view_request(request, request_id):
     """Leader view of a meeting request with full details and suggestions"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to view this request')
     
     # Get participants and response status
     participants = meeting_request.participants.all()
@@ -250,13 +451,28 @@ def view_request(request, request_id):
     })
 
 
+@login_required
 def lock_slot(request, request_id, slot_id):
     """Lock a suggested slot as the final meeting time"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
-    slot = get_object_or_404(SuggestedSlot, id=slot_id, meeting_request=meeting_request)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to lock this slot')
+    
+    
+    # Try to get the slot by ID
+    try:
+        slot = SuggestedSlot.objects.get(id=slot_id, meeting_request=meeting_request)
+    except SuggestedSlot.DoesNotExist:
+        # Slot doesn't exist - it was regenerated after the page was loaded
+        # Ask the user to reload and select again
+        messages.warning(request, 'Dữ liệu đã thay đổi do có người cập nhật lịch. Vui lòng tải lại trang và chọn khung giờ phù hợp.')
+        return redirect('view_request', request_id=request_id)
+    
     
     # Delete all other slots (keep only the locked slot)
-    SuggestedSlot.objects.filter(meeting_request=meeting_request).exclude(id=slot_id).delete()
+    SuggestedSlot.objects.filter(meeting_request=meeting_request).exclude(id=slot.id).delete()
     
     # Lock this slot
     slot.is_locked = True
@@ -266,17 +482,24 @@ def lock_slot(request, request_id, slot_id):
     meeting_request.status = 'locked'
     meeting_request.save()
     
-    messages.success(request, 'Đã chốt khung giờ họp!')
+    # Send notification emails to all participants
+    participants_with_email = meeting_request.participants.exclude(email__isnull=True).exclude(email='')
+    sent_count = 0
+    for participant in participants_with_email:
+        if send_meeting_locked_notification(participant, meeting_request, slot):
+            sent_count += 1
+    
+    messages.success(request, f'Đã chốt khung giờ họp! Đã gửi thông báo đến {sent_count} người tham gia.')
     return redirect('view_request', request_id=request_id)
 
 
+@login_required
 def edit_request(request, request_id):
     """Edit meeting request settings"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
     
     # Verify ownership
-    creator_id = get_or_create_creator_id(request)
-    if meeting_request.creator_id != creator_id:
+    if meeting_request.created_by_email != request.user.email:
         return HttpResponseForbidden('You do not have permission to edit this request')
     
     if request.method == 'POST':
@@ -294,9 +517,14 @@ def edit_request(request, request_id):
     })
 
 
+@login_required
 def delete_request(request, request_id):
     """Delete a meeting request"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to delete this request')
     
     if request.method == 'POST':
         title = meeting_request.title
@@ -549,3 +777,111 @@ def api_get_suggestions(request, request_id):
         })
     
     return JsonResponse({'suggestions': data})
+
+
+# =============================================================================
+# EMAIL VERIFICATION
+# =============================================================================
+
+def verify_email(request, token):
+    """Verify user email with token"""
+    try:
+        profile = UserProfile.objects.get(email_verification_token=token)
+        
+        # Check if token is still valid
+        if not profile.is_verification_token_valid():
+            messages.error(request, 'Link xác thực đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực.')
+            return redirect('resend_verification')
+        
+        # Verify email
+        profile.verify_email()
+        messages.success(request, 'Email đã được xác thực thành công! Bạn có thể đăng nhập ngay bây giờ.')
+        return redirect('login')
+        
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Link xác thực không hợp lệ.')
+        return redirect('login')
+
+
+def resend_verification(request):
+    """Resend verification email"""
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        
+        if not email:
+            messages.error(request, 'Vui lòng nhập địa chỉ email.')
+            return render(request, 'meetings/resend_verification.html')
+        
+        try:
+            user = User.objects.get(email=email)
+            profile = user.profile
+            
+            # Check if already verified
+            if profile.email_verified:
+                messages.info(request, 'Email này đã được xác thực. Bạn có thể đăng nhập.')
+                return redirect('login')
+            
+            # Generate new token
+            token = profile.generate_verification_token()
+            
+            # Build verification URL
+            verification_url = request.build_absolute_uri(
+                f'/verify-email/{token}/'
+            )
+            
+            # Send verification email
+            send_verification_email(user, verification_url)
+            
+            messages.success(
+                request,
+                f'Email xác thực đã được gửi lại đến {email}. Vui lòng kiểm tra hộp thư của bạn.'
+            )
+            return redirect('login')
+            
+        except User.DoesNotExist:
+            # Don't reveal if email exists or not for security
+            messages.info(
+                request,
+                'Nếu email này tồn tại trong hệ thống, một email xác thực sẽ được gửi đến.'
+            )
+            return redirect('login')
+    
+    # GET request - show form
+    email = request.GET.get('email', '')
+    return render(request, 'meetings/resend_verification.html', {'email': email})
+
+
+def send_meeting_invitations(request, request_id):
+    """Send meeting invitations to all participants via email"""
+    meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to send invitations')
+    
+    # Get all participants with email addresses
+    participants_with_email = meeting_request.participants.exclude(email__isnull=True).exclude(email='')
+    
+    sent_count = 0
+    failed_count = 0
+    
+    for participant in participants_with_email:
+        # Build respond URL with token and participant ID
+        respond_url = request.build_absolute_uri(
+            f'/r/{meeting_request.id}/?t={meeting_request.token}&p={participant.id}'
+        )
+        
+        # Send invitation email
+        if send_meeting_invitation_email(participant, meeting_request, respond_url):
+            sent_count += 1
+        else:
+            failed_count += 1
+    
+    if sent_count > 0:
+        messages.success(request, f'Đã gửi lời mời đến {sent_count} người tham gia.')
+    
+    if failed_count > 0:
+        messages.warning(request, f'Không thể gửi email đến {failed_count} người.')
+    
+    return redirect('view_request', request_id=request_id)
+

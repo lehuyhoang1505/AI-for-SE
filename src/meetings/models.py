@@ -10,6 +10,9 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 import pytz
 
+# Import UserProfile to ensure it's loaded
+from .user_profile import UserProfile
+
 
 class MeetingRequest(models.Model):
     """

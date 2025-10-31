@@ -11,6 +11,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +26,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-t#tbi7guvf=^8md-pteg@pzr4ilss)qima99(&yp)(3tcu*g!+'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-t#tbi7guvf=^8md-pteg@pzr4ilss)qima99(&yp)(3tcu*g!+')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -84,11 +90,11 @@ WSGI_APPLICATION = 'time_mamager.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sql_time_manager',
-        'USER': 'sql_time_manager',
-        'PASSWORD': '634296e9769698',  # Change this to your MySQL password
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'db_time_manager'),
+        'USER': os.environ.get('DB_USER', 'db_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'db_password'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
         },
@@ -138,3 +144,19 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
+
+# Email settings (Resend)
+# Set RESEND_API_KEY in environment variable or here
+import os
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', 're_xxxxxxxxxxxxxxxxx')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'abc@example.com')
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development/testing
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')  # Base URL for email links
+
+# Email verification settings
+EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = int(os.environ.get('EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS', 24))  # Verification link expires after 24 hours
