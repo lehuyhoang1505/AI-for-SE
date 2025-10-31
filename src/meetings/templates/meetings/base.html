@@ -33,6 +33,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'home' %}">Trang chủ</a>
                     </li>
+                    {% if user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                     </li>
@@ -41,6 +42,29 @@
                             <i class="bi bi-plus-circle"></i> Tạo yêu cầu mới
                         </a>
                     </li>
+                    <li class="nav-item dropdown ms-2">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-success text-white ms-2" href="{% url 'register' %}">
+                            <i class="bi bi-person-plus"></i> Đăng ký
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

@@ -8,6 +8,10 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from datetime import datetime, timedelta
 import json
 import uuid
@@ -15,7 +19,7 @@ import uuid
 from .models import MeetingRequest, Participant, BusySlot, SuggestedSlot
 from .forms import (
     MeetingRequestForm, ParticipantForm, BulkParticipantForm,
-    BusySlotForm, ParticipantResponseForm
+    BusySlotForm, ParticipantResponseForm, UserRegistrationForm
 )
 from .utils import (
     generate_suggested_slots, get_top_suggestions, get_heatmap_data,
@@ -33,6 +37,60 @@ def get_or_create_creator_id(request):
 
 
 # =============================================================================
+# AUTHENTICATION VIEWS
+# =============================================================================
+
+def user_login(request):
+    """Login page"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Chào mừng {username}!')
+                # Redirect to next parameter or dashboard
+                next_url = request.GET.get('next', 'dashboard')
+                return redirect(next_url)
+        else:
+            messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng')
+    else:
+        form = AuthenticationForm()
+    
+    return render(request, 'meetings/login.html', {'form': form})
+
+
+def user_register(request):
+    """Registration page"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Đăng ký thành công! Chào mừng bạn đến với TimeWeave.')
+            return redirect('dashboard')
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'meetings/register.html', {'form': form})
+
+
+def user_logout(request):
+    """Logout"""
+    logout(request)
+    messages.success(request, 'Đã đăng xuất thành công')
+    return redirect('home')
+
+
+# =============================================================================
 # HOME & DASHBOARD
 # =============================================================================
 
@@ -41,13 +99,13 @@ def home(request):
     return render(request, 'meetings/home.html')
 
 
+@login_required
 def dashboard(request):
     """Leader dashboard showing all their meeting requests"""
-    # Get creator ID from session
-    creator_id = get_or_create_creator_id(request)
-    
-    # Filter requests by creator_id
-    recent_requests = MeetingRequest.objects.filter(creator_id=creator_id).order_by('-created_at')[:20]
+    # Filter requests by the logged-in user
+    recent_requests = MeetingRequest.objects.filter(
+        created_by_email=request.user.email
+    ).order_by('-created_at')[:20]
     
     # Add response counts and share URL to each request for template
     for req in recent_requests:
@@ -66,14 +124,16 @@ def dashboard(request):
 # LEADER WORKFLOW - CREATE REQUEST (3-STEP WIZARD)
 # =============================================================================
 
+@login_required
 def create_request_step1(request):
     """Step 1: Meeting configuration"""
     if request.method == 'POST':
         form = MeetingRequestForm(request.POST)
         if form.is_valid():
             meeting_request = form.save(commit=False)
-            # Set creator_id from session
-            meeting_request.creator_id = get_or_create_creator_id(request)
+            # Set creator email from logged-in user
+            meeting_request.created_by_email = request.user.email
+            meeting_request.creator_id = str(request.user.id)
             meeting_request.save()
             # Store ID in session for next steps
             request.session['meeting_request_id'] = str(meeting_request.id)
@@ -89,12 +149,14 @@ def create_request_step1(request):
             'work_hours_end': '18:00',
             'step_size_minutes': 30,
             'work_days_only': True,
+            'created_by_email': request.user.email,
         }
         form = MeetingRequestForm(initial=initial)
     
     return render(request, 'meetings/create_step1.html', {'form': form})
 
 
+@login_required
 def create_request_step2(request):
     """Step 2: Add participants (optional)"""
     meeting_request_id = request.session.get('meeting_request_id')
@@ -172,6 +234,7 @@ def create_request_step2(request):
     })
 
 
+@login_required
 def create_request_step3(request):
     """Step 3: Review and finalize"""
     meeting_request_id = request.session.get('meeting_request_id')
@@ -199,9 +262,15 @@ def create_request_step3(request):
     })
 
 
+@login_required
 def request_created(request, request_id):
     """Success page after creating request"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to view this request')
+    
     share_url = request.build_absolute_uri(meeting_request.get_share_url())
     
     return render(request, 'meetings/request_created.html', {
@@ -214,9 +283,14 @@ def request_created(request, request_id):
 # LEADER WORKFLOW - VIEW & MANAGE REQUEST
 # =============================================================================
 
+@login_required
 def view_request(request, request_id):
     """Leader view of a meeting request with full details and suggestions"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to view this request')
     
     # Get participants and response status
     participants = meeting_request.participants.all()
@@ -250,9 +324,15 @@ def view_request(request, request_id):
     })
 
 
+@login_required
 def lock_slot(request, request_id, slot_id):
     """Lock a suggested slot as the final meeting time"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to lock this slot')
+    
     slot = get_object_or_404(SuggestedSlot, id=slot_id, meeting_request=meeting_request)
     
     # Delete all other slots (keep only the locked slot)
@@ -270,13 +350,13 @@ def lock_slot(request, request_id, slot_id):
     return redirect('view_request', request_id=request_id)
 
 
+@login_required
 def edit_request(request, request_id):
     """Edit meeting request settings"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
     
     # Verify ownership
-    creator_id = get_or_create_creator_id(request)
-    if meeting_request.creator_id != creator_id:
+    if meeting_request.created_by_email != request.user.email:
         return HttpResponseForbidden('You do not have permission to edit this request')
     
     if request.method == 'POST':
@@ -294,9 +374,14 @@ def edit_request(request, request_id):
     })
 
 
+@login_required
 def delete_request(request, request_id):
     """Delete a meeting request"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to delete this request')
     
     if request.method == 'POST':
         title = meeting_request.title
