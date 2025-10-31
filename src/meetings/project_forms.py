@@ -41,7 +41,7 @@ class ProjectForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         # If editing existing project, populate member_emails
-        if self.instance and self.instance.pk:
+        if self.instance and self.instance.pk and hasattr(self.instance, 'leader') and self.instance.leader:
             members = self.instance.members.exclude(id=self.instance.leader.id)
             self.fields['member_emails'].initial = '\n'.join(
                 member.email for member in members if member.email
@@ -83,7 +83,8 @@ class ProjectForm(forms.ModelForm):
         project = super().save(commit=False)
         
         # Set leader if creating new project
-        if not project.pk and self.user:
+        # Check _state.adding instead of pk because UUID is assigned immediately
+        if project._state.adding and self.user:
             project.leader = self.user
         
         if commit:
@@ -109,7 +110,7 @@ class ProjectForm(forms.ModelForm):
                     )
             
             # Remove members that are no longer in the list
-            if self.instance.pk:
+            if not project._state.adding:
                 current_member_ids = [user.id for user in member_users] + [project.leader.id]
                 ProjectMembership.objects.filter(project=project).exclude(
                     user_id__in=current_member_ids
@@ -165,7 +166,8 @@ class TodoTaskForm(forms.ModelForm):
             self.fields['assignee_ids'].queryset = self.project.members.all()
         
         # If editing existing task, populate assignees and tags
-        if self.instance and self.instance.pk:
+        # Check _state.adding to ensure the task has been saved to the database
+        if self.instance and self.instance.pk and not self.instance._state.adding:
             self.fields['assignee_ids'].initial = self.instance.assignees.all()
             self.fields['tag_names'].initial = ', '.join(
                 tag.name for tag in self.instance.tags.all()

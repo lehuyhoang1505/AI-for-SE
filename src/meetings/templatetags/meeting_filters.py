@@ -31,3 +31,14 @@ def format_date_header(date_str):
         return f"{day_name} {date_obj.day}/{date_obj.month}"
     except:
         return date_str
+
+@register.filter
+def abs_value(value):
+    """
+    Returns the absolute value of a number
+    Usage: {{ number|abs_value }}
+    """
+    try:
+        return abs(value)
+    except (ValueError, TypeError):
+        return value

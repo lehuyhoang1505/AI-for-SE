@@ -291,17 +291,23 @@ class TodoTask(models.Model):
             self.progress_percentage = 100
         
         # Create history entry for status changes
-        is_new = self.pk is None
+        # Use _state.adding instead of pk check for UUID primary keys
+        is_new = self._state.adding
         if not is_new:
-            old_task = TodoTask.objects.get(pk=self.pk)
-            if old_task.status != self.status:
-                # Will be created in signal or view
+            try:
+                old_task = TodoTask.objects.get(pk=self.pk)
+                if old_task.status != self.status:
+                    # Will be created in signal or view
+                    pass
+            except TodoTask.DoesNotExist:
+                # Task doesn't exist yet, treat as new
                 pass
         
         super().save(*args, **kwargs)
         
         # Update project completion percentage
-        self.project.update_completion_percentage()
+        if self.project_id:  # Check if project is set
+            self.project.update_completion_percentage()
 
 
 class TaskTag(models.Model):

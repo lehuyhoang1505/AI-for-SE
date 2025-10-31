@@ -1,4 +1,5 @@
 {% extends 'meetings/base.html' %}
+{% load meeting_filters %}
 
 {% block title %}{{ project.name }} - Dự án{% endblock %}
 
@@ -20,10 +21,10 @@
                     <p class="text-muted">{{ project.description }}</p>
                 </div>
                 <div>
-                    <span class="badge bg-{{ project.status == 'active' and 'success' or 'secondary' }} fs-6">
+                    <span class="badge bg-{% if project.status == 'active' %}success{% else %}secondary{% endif %} fs-6">
                         {{ project.get_status_display }}
                     </span>
-                    <span class="badge bg-{{ project.priority == 'urgent' and 'danger' or project.priority == 'high' and 'warning' or 'secondary' }} fs-6">
+                    <span class="badge bg-{% if project.priority == 'urgent' %}danger{% elif project.priority == 'high' %}warning{% else %}secondary{% endif %} fs-6">
                         {{ project.get_priority_display }}
                     </span>
                 </div>
@@ -65,7 +66,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted">Sức khỏe dự án</h6>
-                    <h3 class="card-title text-{{ health_score >= 70 and 'success' or health_score >= 40 and 'warning' or 'danger' }}">
+                    <h3 class="card-title text-{% if health_score >= 70 %}success{% elif health_score >= 40 %}warning{% else %}danger{% endif %}">
                         {{ health_score }}%
                     </h3>
                     <small>Đánh giá tổng quan</small>
@@ -77,7 +78,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted">Khả năng hoàn thành</h6>
-                    <h3 class="card-title text-{{ probability >= 70 and 'success' or probability >= 40 and 'warning' or 'danger' }}">
+                    <h3 class="card-title text-{% if probability >= 70 %}success{% elif probability >= 40 %}warning{% else %}danger{% endif %}">
                         {{ probability }}%
                     </h3>
                     <small>Dựa trên velocity</small>
@@ -89,9 +90,9 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted">Deadline</h6>
-                    <h3 class="card-title text-{{ project.days_remaining < 0 and 'danger' or project.days_remaining <= 3 and 'warning' or 'primary' }}">
+                    <h3 class="card-title text-{% if project.days_remaining < 0 %}danger{% elif project.days_remaining <= 3 %}warning{% else %}primary{% endif %}">
                         {% if project.days_remaining < 0 %}
-                            Quá {{ project.days_remaining|abs }}
+                            Quá {{ project.days_remaining|abs_value }}
                         {% else %}
                             {{ project.days_remaining }}
                         {% endif %}
@@ -147,7 +148,7 @@
             {% for task in recommended %}
             <li>
                 <a href="{% url 'task_detail' project.id task.id %}">{{ task.title }}</a>
-                <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}secondary{% endif %}">
                     {{ task.get_priority_display }}
                 </span>
                 {% if task.is_overdue %}
@@ -222,12 +223,12 @@
                                         </a>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ task.status == 'completed' and 'success' or task.status == 'in_progress' and 'primary' or 'secondary' }}">
+                                        <span class="badge bg-{% if task.status == 'completed' %}success{% elif task.status == 'in_progress' %}primary{% else %}secondary{% endif %}">
                                             {{ task.get_status_display }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                        <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}secondary{% endif %}">
                                             {{ task.get_priority_display }}
                                         </span>
                                     </td>
@@ -241,7 +242,7 @@
                                     <td>
                                         {{ task.due_date }}
                                         {% if task.is_overdue %}
-                                            <br><small class="text-danger">Quá hạn {{ task.days_remaining|abs }} ngày</small>
+                                            <br><small class="text-danger">Quá hạn {{ task.days_remaining|abs_value }} ngày</small>
                                         {% elif task.is_soon_overdue %}
                                             <br><small class="text-warning">Còn {{ task.days_remaining }} ngày</small>
                                         {% endif %}

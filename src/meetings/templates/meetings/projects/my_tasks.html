@@ -1,4 +1,5 @@
 {% extends 'meetings/base.html' %}
+{% load meeting_filters %}
 
 {% block title %}Công việc của tôi{% endblock %}
 
@@ -57,11 +58,11 @@
                 <a href="{% url 'task_detail' task.project.id task.id %}" class="text-dark fw-bold">
                     {{ task.title }}
                 </a>
-                <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or 'warning' }}">
+                <span class="badge bg-{% if task.priority == 'urgent' %}danger{% else %}warning{% endif %}">
                     {{ task.get_priority_display }}
                 </span>
                 <small class="text-muted">
-                    ({{ task.project.name }} - Quá hạn {{ task.days_remaining|abs }} ngày)
+                    ({{ task.project.name }} - Quá hạn {{ task.days_remaining|abs_value }} ngày)
                 </small>
             </li>
             {% endfor %}
@@ -90,11 +91,11 @@
                                     <small class="text-muted">{{ task.project.name }}</small>
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                    <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}secondary{% endif %}">
                                         {{ task.get_priority_display }}
                                     </span>
                                     <br>
-                                    <small class="text-{{ task.is_overdue and 'danger' or task.is_soon_overdue and 'warning' or 'muted' }}">
+                                    <small class="text-{% if task.is_overdue %}danger{% elif task.is_soon_overdue %}warning{% else %}muted{% endif %}">
                                         {{ task.due_date }}
                                     </small>
                                 </div>
@@ -133,11 +134,11 @@
                                     <small class="text-muted">{{ task.project.name }}</small>
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                    <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}secondary{% endif %}">
                                         {{ task.get_priority_display }}
                                     </span>
                                     <br>
-                                    <small class="text-{{ task.is_overdue and 'danger' or task.is_soon_overdue and 'warning' or 'muted' }}">
+                                    <small class="text-{% if task.is_overdue %}danger{% elif task.is_soon_overdue %}warning{% else %}muted{% endif %}">
                                         {{ task.due_date }}
                                     </small>
                                 </div>
@@ -171,7 +172,7 @@
                                     <small class="text-muted">{{ task.project.name }}</small>
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                    <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}secondary{% endif %}">
                                         {{ task.get_priority_display }}
                                     </span>
                                     <br>

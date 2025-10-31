@@ -1,6 +1,7 @@
 {% extends 'meetings/base.html' %}
+{% load meeting_filters %}
 
-{% block title %}{{ task.title }} - Chi tiết Task{% endblock %}
+{% block title %}{{ task.title }} - Task{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -40,13 +41,13 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <h6>Trạng thái</h6>
-                            <span class="badge bg-{{ task.status == 'completed' and 'success' or task.status == 'in_progress' and 'primary' or 'secondary' }} fs-6">
+                            <span class="badge bg-{% if task.status == 'completed' %}success{% elif task.status == 'in_progress' %}primary{% else %}secondary{% endif %} fs-6">
                                 {{ task.get_status_display }}
                             </span>
                         </div>
                         <div class="col-md-6">
                             <h6>Ưu tiên</h6>
-                            <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }} fs-6">
+                            <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}secondary{% endif %} fs-6">
                                 {{ task.get_priority_display }}
                             </span>
                         </div>
@@ -151,10 +152,10 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <strong>Hạn chót:</strong>
-                        <div class="text-{{ task.is_overdue and 'danger' or task.is_soon_overdue and 'warning' or 'primary' }}">
+                        <div class="text-{% if task.is_overdue %}danger{% elif task.is_soon_overdue %}warning{% else %}primary{% endif %}">
                             {{ task.due_date }}
                             {% if task.is_overdue %}
-                            <br><small class="fw-bold">Quá hạn {{ task.days_remaining|abs }} ngày</small>
+                            <br><small class="fw-bold">Quá hạn {{ task.days_remaining|abs_value }} ngày</small>
                             {% elif task.is_soon_overdue %}
                             <br><small class="fw-bold">Còn {{ task.days_remaining }} ngày</small>
                             {% else %}

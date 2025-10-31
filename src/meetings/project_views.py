@@ -122,14 +122,6 @@ def project_create(request):
         if form.is_valid():
             project = form.save()
             
-            # Create initial history entry
-            create_task_history_entry(
-                task=None,  # Project-level, no specific task
-                user=request.user,
-                action='created',
-                description=f'Dự án "{project.name}" được tạo'
-            )
-            
             messages.success(request, f'Dự án "{project.name}" đã được tạo thành công!')
             return redirect('project_detail', project_id=project.id)
     else:
