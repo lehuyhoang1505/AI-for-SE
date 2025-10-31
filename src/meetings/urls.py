@@ -10,6 +10,10 @@ urlpatterns = [
     path('register/', views.user_register, name='register'),
     path('logout/', views.user_logout, name='logout'),
     
+    # Email Verification
+    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('resend-verification/', views.resend_verification, name='resend_verification'),
+    
     # Home & Dashboard
     path('', views.home, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -25,6 +29,7 @@ urlpatterns = [
     path('request/<uuid:request_id>/edit/', views.edit_request, name='edit_request'),
     path('request/<uuid:request_id>/lock/<uuid:slot_id>/', views.lock_slot, name='lock_slot'),
     path('request/<uuid:request_id>/delete/', views.delete_request, name='delete_request'),
+    path('request/<uuid:request_id>/send-invitations/', views.send_meeting_invitations, name='send_meeting_invitations'),
     
     # Member Workflow - Respond
     path('r/<uuid:request_id>/', views.respond_to_request, name='respond_to_request'),

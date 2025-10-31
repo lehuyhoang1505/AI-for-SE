@@ -86,7 +86,7 @@
             <h5 class="mb-0"><i class="bi bi-share"></i> Link chia sẻ</h5>
         </div>
         <div class="card-body">
-            <div class="input-group">
+            <div class="input-group mb-3">
                 <input type="text" 
                        class="form-control" 
                        id="share-link" 
@@ -98,6 +98,19 @@
                     <i class="bi bi-clipboard"></i> Sao chép
                 </button>
             </div>
+            
+            <!-- Send Email Invitations Button -->
+            {% if participants.count > 0 %}
+            <div class="d-grid">
+                <form method="post" action="{% url 'send_meeting_invitations' meeting_request.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-primary w-100" 
+                            onclick="return confirm('Gửi email mời đến tất cả người tham gia có địa chỉ email?')">
+                        <i class="bi bi-envelope"></i> Gửi email mời đến người tham gia
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 

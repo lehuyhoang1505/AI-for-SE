@@ -17,6 +17,7 @@ import json
 import uuid
 
 from .models import MeetingRequest, Participant, BusySlot, SuggestedSlot
+from .user_profile import UserProfile
 from .forms import (
     MeetingRequestForm, ParticipantForm, BulkParticipantForm,
     BusySlotForm, ParticipantResponseForm, UserRegistrationForm
@@ -25,6 +26,7 @@ from .utils import (
     generate_suggested_slots, get_top_suggestions, get_heatmap_data,
     parse_busy_slots_from_json
 )
+from .email_utils import send_verification_email, send_meeting_invitation_email, send_meeting_locked_notification
 
 
 def get_or_create_creator_id(request):
@@ -52,11 +54,26 @@ def user_login(request):
             password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=password)
             if user is not None:
-                login(request, user)
-                messages.success(request, f'Chào mừng {username}!')
-                # Redirect to next parameter or dashboard
-                next_url = request.GET.get('next', 'dashboard')
-                return redirect(next_url)
+                # Check if email is verified
+                profile = getattr(user, 'profile', None)
+                if profile and not profile.email_verified:
+                    messages.error(
+                        request, 
+                        'Email chưa được xác thực. Vui lòng kiểm tra email và xác thực tài khoản trước khi đăng nhập.'
+                    )
+                    # Add link to resend verification
+                    resend_link = f'<a href="/resend-verification/?email={user.email}" class="btn btn-sm btn-primary">Gửi lại email xác thực</a>'
+                    messages.info(
+                        request,
+                        resend_link,
+                        extra_tags='safe'
+                    )
+                else:
+                    login(request, user)
+                    messages.success(request, f'Chào mừng {username}!')
+                    # Redirect to next parameter or dashboard
+                    next_url = request.GET.get('next', 'dashboard')
+                    return redirect(next_url)
         else:
             messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng')
     else:
@@ -73,10 +90,30 @@ def user_register(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'Đăng ký thành công! Chào mừng bạn đến với TimeWeave.')
-            return redirect('dashboard')
+            user = form.save(commit=False)
+            user.is_active = True  # User can exist but can't login until verified
+            user.save()
+            
+            # Create user profile (should be auto-created by signal, but ensure it exists)
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            
+            # Generate verification token
+            token = profile.generate_verification_token()
+            
+            # Build verification URL
+            verification_url = request.build_absolute_uri(
+                f'/verify-email/{token}/'
+            )
+            
+            # Send verification email
+            send_verification_email(user, verification_url)
+            
+            messages.success(
+                request, 
+                f'Đăng ký thành công! Một email xác thực đã được gửi đến {user.email}. '
+                'Vui lòng kiểm tra email và xác thực tài khoản để đăng nhập.'
+            )
+            return redirect('login')
     else:
         form = UserRegistrationForm()
     
@@ -346,7 +383,14 @@ def lock_slot(request, request_id, slot_id):
     meeting_request.status = 'locked'
     meeting_request.save()
     
-    messages.success(request, 'Đã chốt khung giờ họp!')
+    # Send notification emails to all participants
+    participants_with_email = meeting_request.participants.exclude(email__isnull=True).exclude(email='')
+    sent_count = 0
+    for participant in participants_with_email:
+        if send_meeting_locked_notification(participant, meeting_request, slot):
+            sent_count += 1
+    
+    messages.success(request, f'Đã chốt khung giờ họp! Đã gửi thông báo đến {sent_count} người tham gia.')
     return redirect('view_request', request_id=request_id)
 
 
@@ -634,3 +678,111 @@ def api_get_suggestions(request, request_id):
         })
     
     return JsonResponse({'suggestions': data})
+
+
+# =============================================================================
+# EMAIL VERIFICATION
+# =============================================================================
+
+def verify_email(request, token):
+    """Verify user email with token"""
+    try:
+        profile = UserProfile.objects.get(email_verification_token=token)
+        
+        # Check if token is still valid
+        if not profile.is_verification_token_valid():
+            messages.error(request, 'Link xác thực đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực.')
+            return redirect('resend_verification')
+        
+        # Verify email
+        profile.verify_email()
+        messages.success(request, 'Email đã được xác thực thành công! Bạn có thể đăng nhập ngay bây giờ.')
+        return redirect('login')
+        
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Link xác thực không hợp lệ.')
+        return redirect('login')
+
+
+def resend_verification(request):
+    """Resend verification email"""
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        
+        if not email:
+            messages.error(request, 'Vui lòng nhập địa chỉ email.')
+            return render(request, 'meetings/resend_verification.html')
+        
+        try:
+            user = User.objects.get(email=email)
+            profile = user.profile
+            
+            # Check if already verified
+            if profile.email_verified:
+                messages.info(request, 'Email này đã được xác thực. Bạn có thể đăng nhập.')
+                return redirect('login')
+            
+            # Generate new token
+            token = profile.generate_verification_token()
+            
+            # Build verification URL
+            verification_url = request.build_absolute_uri(
+                f'/verify-email/{token}/'
+            )
+            
+            # Send verification email
+            send_verification_email(user, verification_url)
+            
+            messages.success(
+                request,
+                f'Email xác thực đã được gửi lại đến {email}. Vui lòng kiểm tra hộp thư của bạn.'
+            )
+            return redirect('login')
+            
+        except User.DoesNotExist:
+            # Don't reveal if email exists or not for security
+            messages.info(
+                request,
+                'Nếu email này tồn tại trong hệ thống, một email xác thực sẽ được gửi đến.'
+            )
+            return redirect('login')
+    
+    # GET request - show form
+    email = request.GET.get('email', '')
+    return render(request, 'meetings/resend_verification.html', {'email': email})
+
+
+def send_meeting_invitations(request, request_id):
+    """Send meeting invitations to all participants via email"""
+    meeting_request = get_object_or_404(MeetingRequest, id=request_id)
+    
+    # Verify ownership
+    if meeting_request.created_by_email != request.user.email:
+        return HttpResponseForbidden('You do not have permission to send invitations')
+    
+    # Get all participants with email addresses
+    participants_with_email = meeting_request.participants.exclude(email__isnull=True).exclude(email='')
+    
+    sent_count = 0
+    failed_count = 0
+    
+    for participant in participants_with_email:
+        # Build respond URL with token and participant ID
+        respond_url = request.build_absolute_uri(
+            f'/r/{meeting_request.id}/?t={meeting_request.token}&p={participant.id}'
+        )
+        
+        # Send invitation email
+        if send_meeting_invitation_email(participant, meeting_request, respond_url):
+            sent_count += 1
+        else:
+            failed_count += 1
+    
+    if sent_count > 0:
+        messages.success(request, f'Đã gửi lời mời đến {sent_count} người tham gia.')
+    
+    if failed_count > 0:
+        messages.warning(request, f'Không thể gửi email đến {failed_count} người.')
+    
+    return redirect('view_request', request_id=request_id)
+

@@ -10,6 +10,9 @@
 - ✅ **Tính toán nhanh**: Gợi ý khung giờ tối ưu < 500ms
 - ✅ **Heatmap trực quan**: Ô càng xanh đậm = càng nhiều người rảnh
 - ✅ **Wizard 3 bước**: Dễ dàng tạo yêu cầu
+- ✅ **Email Verification**: Xác thực email người dùng trước khi đăng nhập
+- ✅ **Email Invitations**: Gửi email mời cuộc họp đến người tham gia
+- ✅ **Auto Notifications**: Thông báo tự động khi chốt giờ họp
 
 ## Tech Stack
 
@@ -17,6 +20,7 @@
 - **Database**: MySQL (with PyMySQL)
 - **Frontend**: Bootstrap 5, jQuery
 - **Timezone**: pytz
+- **Email**: Resend API
 - **Testing**: pytest, pytest-django, freezegun
 
 ## Cài đặt
@@ -84,13 +88,28 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 7. Tạo superuser (tùy chọn)
+### 7. Cấu hình Email (Tùy chọn)
+
+Để sử dụng tính năng email verification và gửi thông báo:
+
+```bash
+# Đăng ký tài khoản tại https://resend.com/ và lấy API key
+export RESEND_API_KEY='re_xxxxxxxxxxxxx'
+export DEFAULT_FROM_EMAIL='noreply@yourdomain.com'
+export SITE_URL='http://localhost:8000'
+```
+
+**Lưu ý:** Nếu không cấu hình, email sẽ được in ra console (phù hợp cho development).
+
+📧 **Xem hướng dẫn đầy đủ:** [EMAIL_SETUP_GUIDE.md](EMAIL_SETUP_GUIDE.md)
+
+### 8. Tạo superuser (tùy chọn)
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 8. Chạy development server
+### 9. Chạy development server
 
 ```bash
 python manage.py runserver

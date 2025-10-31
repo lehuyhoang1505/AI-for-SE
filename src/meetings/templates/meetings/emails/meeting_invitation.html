@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mời tham gia cuộc họp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2563eb;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .meeting-info {
+            background-color: #f0f9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #10b981;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background-color: #059669;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ site_name }}</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Mời tham gia cuộc họp</h2>
+            
+            <p>Chào {% if participant.name %}{{ participant.name }}{% else %}bạn{% endif %},</p>
+            
+            <p>Bạn được mời tham gia cuộc họp với thông tin sau:</p>
+            
+            <div class="meeting-info">
+                <p><strong>Tiêu đề:</strong> {{ meeting_request.title }}</p>
+                {% if meeting_request.description %}
+                <p><strong>Mô tả:</strong> {{ meeting_request.description }}</p>
+                {% endif %}
+                <p><strong>Thời lượng:</strong> {{ meeting_request.duration_minutes }} phút</p>
+                <p><strong>Khung thời gian:</strong> {{ meeting_request.date_range_start|date:"d/m/Y" }} - {{ meeting_request.date_range_end|date:"d/m/Y" }}</p>
+            </div>
+            
+            <p>Vui lòng chọn các khung giờ bạn <strong>BẬN</strong> để chúng tôi có thể tìm thời gian phù hợp cho tất cả mọi người:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ respond_url }}" class="button">Cập nhật lịch rảnh</a>
+            </div>
+            
+            <p>Hoặc copy và paste link sau vào trình duyệt:</p>
+            <p style="word-break: break-all; color: #2563eb;">{{ respond_url }}</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 {{ site_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

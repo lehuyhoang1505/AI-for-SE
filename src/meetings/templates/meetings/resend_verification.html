@@ -1,0 +1,64 @@
+{% extends "meetings/base.html" %}
+
+{% block title %}Gửi lại email xác thực{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; margin: 80px auto;">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="text-center mb-4">📧 Gửi lại email xác thực</h2>
+            
+            <p class="text-muted text-center mb-4">
+                Nhập địa chỉ email của bạn để nhận lại link xác thực.
+            </p>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group mb-3">
+                    <label for="email">Email</label>
+                    <input 
+                        type="email" 
+                        class="form-control" 
+                        id="email" 
+                        name="email" 
+                        value="{{ email }}"
+                        required
+                        placeholder="your.email@example.com"
+                    >
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block w-100">
+                    Gửi lại email xác thực
+                </button>
+            </form>
+            
+            <hr class="my-4">
+            
+            <div class="text-center">
+                <p class="mb-0">
+                    <a href="{% url 'login' %}">← Quay lại đăng nhập</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+    
+    .btn-block {
+        padding: 12px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

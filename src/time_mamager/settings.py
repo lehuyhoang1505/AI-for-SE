@@ -143,3 +143,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+
+# Email settings (Resend)
+# Set RESEND_API_KEY in environment variable or here
+import os
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', 're_VGYVzDFo_CEEy6LxbpB3DGDjDUmk1qSvo')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'timeweave@email.tanmanh350.ovh')
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development/testing
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')  # Base URL for email links
+
+# Email verification settings
+EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = 24  # Verification link expires after 24 hours

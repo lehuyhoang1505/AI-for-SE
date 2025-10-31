@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuộc họp đã được chốt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2563eb;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .meeting-time {
+            background-color: #dcfce7;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #10b981;
+        }
+        .meeting-time h3 {
+            margin: 0 0 10px 0;
+            color: #059669;
+        }
+        .time-details {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ site_name }}</h1>
+        </div>
+        
+        <div class="content">
+            <h2>🎉 Cuộc họp đã được chốt!</h2>
+            
+            <p>Chào {% if participant.name %}{{ participant.name }}{% else %}bạn{% endif %},</p>
+            
+            <p>Cuộc họp "<strong>{{ meeting_request.title }}</strong>" đã được chốt lịch với thông tin sau:</p>
+            
+            <div class="meeting-time">
+                <h3>Thời gian cuộc họp</h3>
+                <div class="time-details">
+                    📅 {{ locked_slot.start_time|date:"l, d/m/Y" }}<br>
+                    🕐 {{ locked_slot.start_time|time:"H:i" }} - {{ locked_slot.end_time|time:"H:i" }}
+                </div>
+            </div>
+            
+            {% if meeting_request.description %}
+            <p><strong>Mô tả:</strong><br>{{ meeting_request.description }}</p>
+            {% endif %}
+            
+            <p><strong>Thời lượng:</strong> {{ meeting_request.duration_minutes }} phút</p>
+            
+            <p>Vui lòng sắp xếp lịch trình để tham gia cuộc họp đúng giờ.</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 {{ site_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
