@@ -32,6 +32,20 @@ class UserProfile(models.Model):
         verbose_name='Thời gian tạo token'
     )
     
+    # Password reset
+    password_reset_token = models.CharField(
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='Token đặt lại mật khẩu'
+    )
+    password_reset_token_created_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Thời gian tạo token đặt lại mật khẩu'
+    )
+    
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -65,6 +79,28 @@ class UserProfile(models.Model):
         self.email_verified = True
         self.email_verification_token = None
         self.token_created_at = None
+        self.save()
+    
+    def generate_password_reset_token(self):
+        """Generate a new password reset token"""
+        self.password_reset_token = secrets.token_urlsafe(32)
+        self.password_reset_token_created_at = timezone.now()
+        self.save()
+        return self.password_reset_token
+    
+    def is_password_reset_token_valid(self):
+        """Check if the password reset token is still valid (not expired)"""
+        if not self.password_reset_token_created_at:
+            return False
+        
+        expiry_hours = getattr(settings, 'PASSWORD_RESET_TOKEN_EXPIRY_HOURS', 1)
+        expiry_time = self.password_reset_token_created_at + timedelta(hours=expiry_hours)
+        return timezone.now() < expiry_time
+    
+    def clear_password_reset_token(self):
+        """Clear password reset token after successful reset"""
+        self.password_reset_token = None
+        self.password_reset_token_created_at = None
         self.save()
 
 

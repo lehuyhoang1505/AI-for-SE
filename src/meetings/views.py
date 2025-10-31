@@ -26,7 +26,7 @@ from .utils import (
     generate_suggested_slots, get_top_suggestions, get_heatmap_data,
     parse_busy_slots_from_json
 )
-from .email_utils import send_verification_email, send_meeting_invitation_email, send_meeting_locked_notification
+from .email_utils import send_verification_email, send_meeting_invitation_email, send_meeting_locked_notification, send_password_reset_email
 
 
 def get_or_create_creator_id(request):
@@ -125,6 +125,96 @@ def user_logout(request):
     logout(request)
     messages.success(request, 'Đã đăng xuất thành công')
     return redirect('home')
+
+
+def forgot_password(request):
+    """Request password reset"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        
+        if not email:
+            messages.error(request, 'Vui lòng nhập địa chỉ email.')
+            return render(request, 'meetings/forgot_password.html')
+        
+        try:
+            user = User.objects.get(email=email)
+            profile = user.profile
+            
+            # Generate password reset token
+            token = profile.generate_password_reset_token()
+            
+            # Build reset URL
+            reset_url = request.build_absolute_uri(
+                f'/reset-password/{token}/'
+            )
+            
+            # Send password reset email
+            send_password_reset_email(user, reset_url)
+            
+            messages.success(
+                request,
+                f'Email đặt lại mật khẩu đã được gửi đến {email}. Vui lòng kiểm tra hộp thư của bạn.'
+            )
+            return redirect('login')
+            
+        except User.DoesNotExist:
+            # Don't reveal if email exists or not for security
+            messages.success(
+                request,
+                'Nếu email này tồn tại trong hệ thống, một email đặt lại mật khẩu sẽ được gửi đến.'
+            )
+            return redirect('login')
+    
+    # GET request - show form
+    return render(request, 'meetings/forgot_password.html')
+
+
+def reset_password(request, token):
+    """Reset password with token"""
+    try:
+        profile = UserProfile.objects.get(password_reset_token=token)
+        
+        # Check if token is still valid
+        if not profile.is_password_reset_token_valid():
+            messages.error(request, 'Link đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu link mới.')
+            return redirect('forgot_password')
+        
+        if request.method == 'POST':
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            
+            if not password1 or not password2:
+                messages.error(request, 'Vui lòng nhập đầy đủ thông tin.')
+                return render(request, 'meetings/reset_password.html', {'token': token})
+            
+            if password1 != password2:
+                messages.error(request, 'Mật khẩu không khớp.')
+                return render(request, 'meetings/reset_password.html', {'token': token})
+            
+            if len(password1) < 8:
+                messages.error(request, 'Mật khẩu phải có ít nhất 8 ký tự.')
+                return render(request, 'meetings/reset_password.html', {'token': token})
+            
+            # Set new password
+            user = profile.user
+            user.set_password(password1)
+            user.save()
+            
+            # Clear token
+            profile.clear_password_reset_token()
+            
+            messages.success(request, 'Mật khẩu đã được đặt lại thành công! Bạn có thể đăng nhập ngay bây giờ.')
+            return redirect('login')
+        
+        # GET request - show form
+        return render(request, 'meetings/reset_password.html', {'token': token})
+        
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Link đặt lại mật khẩu không hợp lệ.')
+        return redirect('forgot_password')
 
 
 # =============================================================================
