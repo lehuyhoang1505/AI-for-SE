@@ -84,9 +84,9 @@ WSGI_APPLICATION = 'time_mamager.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sql_time_manager',
-        'USER': 'sql_time_manager',
-        'PASSWORD': '634296e9769698',  # Change this to your MySQL password
+        'NAME': 'time_manager_db',
+        'USER': 'root',
+        'PASSWORD': 'aoeofZ@123',  # Change this to your MySQL password
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {

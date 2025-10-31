@@ -253,10 +253,18 @@ def view_request(request, request_id):
 def lock_slot(request, request_id, slot_id):
     """Lock a suggested slot as the final meeting time"""
     meeting_request = get_object_or_404(MeetingRequest, id=request_id)
-    slot = get_object_or_404(SuggestedSlot, id=slot_id, meeting_request=meeting_request)
+    
+    # Try to get the slot by ID
+    try:
+        slot = SuggestedSlot.objects.get(id=slot_id, meeting_request=meeting_request)
+    except SuggestedSlot.DoesNotExist:
+        # Slot doesn't exist - it was regenerated after the page was loaded
+        # Ask the user to reload and select again
+        messages.warning(request, 'Dữ liệu đã thay đổi do có người cập nhật lịch. Vui lòng tải lại trang và chọn khung giờ phù hợp.')
+        return redirect('view_request', request_id=request_id)
     
     # Delete all other slots (keep only the locked slot)
-    SuggestedSlot.objects.filter(meeting_request=meeting_request).exclude(id=slot_id).delete()
+    SuggestedSlot.objects.filter(meeting_request=meeting_request).exclude(id=slot.id).delete()
     
     # Lock this slot
     slot.is_locked = True
