@@ -1,0 +1,224 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Công việc của tôi{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tasks"></i> Công việc của tôi</h2>
+        <a href="{% url 'project_list' %}" class="btn btn-outline-primary">
+            <i class="fas fa-project-diagram"></i> Dự án
+        </a>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ todo_tasks.count }}</h3>
+                    <p class="mb-0">Cần làm</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ in_progress_tasks.count }}</h3>
+                    <p class="mb-0">Đang làm</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ review_tasks.count }}</h3>
+                    <p class="mb-0">Đang review</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ overdue_tasks.count }}</h3>
+                    <p class="mb-0">Quá hạn</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Tasks -->
+    {% if overdue_tasks %}
+    <div class="alert alert-danger mb-4">
+        <h5><i class="fas fa-exclamation-triangle"></i> Công việc quá hạn ({{ overdue_tasks.count }})</h5>
+        <ul class="mb-0">
+            {% for task in overdue_tasks %}
+            <li>
+                <a href="{% url 'task_detail' task.project.id task.id %}" class="text-dark fw-bold">
+                    {{ task.title }}
+                </a>
+                <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or 'warning' }}">
+                    {{ task.get_priority_display }}
+                </span>
+                <small class="text-muted">
+                    ({{ task.project.name }} - Quá hạn {{ task.days_remaining|abs }} ngày)
+                </small>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Task Sections -->
+    <div class="accordion" id="taskAccordion">
+        <!-- In Progress -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#inProgress">
+                    <i class="fas fa-spinner me-2"></i> Đang làm ({{ in_progress_tasks.count }})
+                </button>
+            </h2>
+            <div id="inProgress" class="accordion-collapse collapse show" data-bs-parent="#taskAccordion">
+                <div class="accordion-body">
+                    {% if in_progress_tasks %}
+                    <div class="list-group">
+                        {% for task in in_progress_tasks %}
+                        <a href="{% url 'task_detail' task.project.id task.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ task.title }}</h6>
+                                    <small class="text-muted">{{ task.project.name }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                    <br>
+                                    <small class="text-{{ task.is_overdue and 'danger' or task.is_soon_overdue and 'warning' or 'muted' }}">
+                                        {{ task.due_date }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 20px;">
+                                <div class="progress-bar" style="width: {{ task.progress_percentage }}%">
+                                    {{ task.progress_percentage }}%
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Không có công việc đang làm</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Todo -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#todo">
+                    <i class="fas fa-list me-2"></i> Cần làm ({{ todo_tasks.count }})
+                </button>
+            </h2>
+            <div id="todo" class="accordion-collapse collapse" data-bs-parent="#taskAccordion">
+                <div class="accordion-body">
+                    {% if todo_tasks %}
+                    <div class="list-group">
+                        {% for task in todo_tasks %}
+                        <a href="{% url 'task_detail' task.project.id task.id %}" class="list-group-item list-group-item-action {% if task.is_overdue %}list-group-item-danger{% elif task.is_soon_overdue %}list-group-item-warning{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ task.title }}</h6>
+                                    <small class="text-muted">{{ task.project.name }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                    <br>
+                                    <small class="text-{{ task.is_overdue and 'danger' or task.is_soon_overdue and 'warning' or 'muted' }}">
+                                        {{ task.due_date }}
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Không có công việc cần làm</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Review -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#review">
+                    <i class="fas fa-eye me-2"></i> Đang review ({{ review_tasks.count }})
+                </button>
+            </h2>
+            <div id="review" class="accordion-collapse collapse" data-bs-parent="#taskAccordion">
+                <div class="accordion-body">
+                    {% if review_tasks %}
+                    <div class="list-group">
+                        {% for task in review_tasks %}
+                        <a href="{% url 'task_detail' task.project.id task.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ task.title }}</h6>
+                                    <small class="text-muted">{{ task.project.name }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">{{ task.due_date }}</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Không có công việc đang review</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#completed">
+                    <i class="fas fa-check me-2"></i> Hoàn thành ({{ completed_tasks.count }})
+                </button>
+            </h2>
+            <div id="completed" class="accordion-collapse collapse" data-bs-parent="#taskAccordion">
+                <div class="accordion-body">
+                    {% if completed_tasks %}
+                    <div class="list-group">
+                        {% for task in completed_tasks|slice:":20" %}
+                        <a href="{% url 'task_detail' task.project.id task.id %}" class="list-group-item list-group-item-action list-group-item-success">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ task.title }}</h6>
+                                    <small class="text-muted">{{ task.project.name }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ task.completed_at|date:"d/m/Y" }}</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Chưa hoàn thành công việc nào</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

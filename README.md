@@ -167,7 +167,7 @@ python manage.py runserver 0.0.0.0:8000
 **Lưu ý về Email:** 
 - Trong development mode, email sẽ được in ra console terminal
 - Để gửi email thật, cấu hình `RESEND_API_KEY` trong file `.env`
-- 📧 **Xem hướng dẫn đầy đủ:** [EMAIL_SETUP_GUIDE.md](EMAIL_SETUP_GUIDE.md)
+
 
 ## Deployment (Production)
 
@@ -680,16 +680,6 @@ Quản lý:
 - Participants
 - Busy Slots
 - Suggested Slots
-
-## Tính năng nâng cao (TODO)
-
-- [ ] Export to ICS file
-- [ ] Google Calendar integration (OAuth)
-- [ ] Outlook Calendar integration
-- [ ] Email notifications
-- [ ] Real-time updates với WebSocket
-- [ ] Multi-language support
-- [ ] Mobile app
 
 ## Xử lý sự cố
 

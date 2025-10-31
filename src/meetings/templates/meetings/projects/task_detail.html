@@ -1,0 +1,210 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}{{ task.title }} - Chi tiết Task{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'project_list' %}">Dự án</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+            <li class="breadcrumb-item active">{{ task.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Task Details -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ task.title }}</h4>
+                        <div>
+                            <a href="{% url 'task_edit' project.id task.id %}" class="btn btn-light btn-sm">
+                                <i class="fas fa-edit"></i> Chỉnh sửa
+                            </a>
+                            {% if task.created_by == request.user or project.leader == request.user %}
+                            <a href="{% url 'task_delete' project.id task.id %}" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> Xóa
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Mô tả</h6>
+                        <p class="text-muted">{{ task.description|default:"Không có mô tả" }}</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>Trạng thái</h6>
+                            <span class="badge bg-{{ task.status == 'completed' and 'success' or task.status == 'in_progress' and 'primary' or 'secondary' }} fs-6">
+                                {{ task.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Ưu tiên</h6>
+                            <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }} fs-6">
+                                {{ task.get_priority_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Tiến độ</h6>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%">
+                                {{ task.progress_percentage }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>Người thực hiện</h6>
+                            {% for assignee in task.assignees.all %}
+                                <span class="badge bg-info">{{ assignee.username }}</span>
+                            {% empty %}
+                                <span class="text-muted">Chưa gán</span>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Người tạo</h6>
+                            <span class="badge bg-secondary">{{ task.created_by.username }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Tags</h6>
+                        {% for tag in task.tags.all %}
+                            <span class="badge" style="background-color: {{ tag.color }}">{{ tag.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">Không có tag</span>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if task.estimated_hours or task.actual_hours %}
+                    <div class="row mb-3">
+                        {% if task.estimated_hours %}
+                        <div class="col-md-6">
+                            <h6>Ước tính</h6>
+                            <p>{{ task.estimated_hours }} giờ</p>
+                        </div>
+                        {% endif %}
+                        {% if task.actual_hours %}
+                        <div class="col-md-6">
+                            <h6>Thực tế</h6>
+                            <p>{{ task.actual_hours }} giờ</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-comments"></i> Bình luận</h5>
+                </div>
+                <div class="card-body">
+                    {% if comments %}
+                    <div class="mb-4">
+                        {% for comment in comments %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ comment.user.username }}</strong>
+                                    <small class="text-muted">{{ comment.created_at|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <p class="mb-0 mt-2">{{ comment.content }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Chưa có bình luận nào.</p>
+                    {% endif %}
+                    
+                    <!-- Add Comment Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ comment_form.content }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Gửi bình luận
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Timeline Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="far fa-calendar"></i> Thời gian</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Hạn chót:</strong>
+                        <div class="text-{{ task.is_overdue and 'danger' or task.is_soon_overdue and 'warning' or 'primary' }}">
+                            {{ task.due_date }}
+                            {% if task.is_overdue %}
+                            <br><small class="fw-bold">Quá hạn {{ task.days_remaining|abs }} ngày</small>
+                            {% elif task.is_soon_overdue %}
+                            <br><small class="fw-bold">Còn {{ task.days_remaining }} ngày</small>
+                            {% else %}
+                            <br><small>Còn {{ task.days_remaining }} ngày</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Tạo lúc:</strong>
+                        <div>{{ task.created_at|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    
+                    {% if task.completed_at %}
+                    <div class="mb-3">
+                        <strong>Hoàn thành lúc:</strong>
+                        <div>{{ task.completed_at|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- History -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Lịch sử</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if history %}
+                    <div class="timeline">
+                        {% for entry in history %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <small class="fw-bold">{{ entry.get_action_display }}</small>
+                                <small class="text-muted">{{ entry.created_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <small class="text-muted">{{ entry.user.username }}</small>
+                            {% if entry.description %}
+                            <div class="small">{{ entry.description }}</div>
+                            {% endif %}
+                        </div>
+                        <hr>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">Chưa có lịch sử.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

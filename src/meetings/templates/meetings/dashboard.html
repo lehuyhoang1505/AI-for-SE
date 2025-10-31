@@ -7,126 +7,186 @@
     <div class="row mb-4">
         <div class="col-12">
             <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
-            <p class="text-muted">Quản lý các yêu cầu tìm thời gian họp</p>
+            <p class="text-muted">Quản lý yêu cầu họp và dự án</p>
         </div>
     </div>
 
+    <!-- Quick Actions -->
     <div class="row mb-4">
-        <div class="col-12">
-            <a href="{% url 'create_request_step1' %}" class="btn btn-success btn-lg">
-                <i class="bi bi-plus-circle"></i> Tạo yêu cầu mới
+        <div class="col-md-6 mb-2">
+            <a href="{% url 'create_request_step1' %}" class="btn btn-success btn-lg w-100">
+                <i class="bi bi-plus-circle"></i> Tạo yêu cầu họp mới
+            </a>
+        </div>
+        <div class="col-md-6 mb-2">
+            <a href="{% url 'project_create' %}" class="btn btn-primary btn-lg w-100">
+                <i class="fas fa-plus-circle"></i> Tạo dự án mới
             </a>
         </div>
     </div>
 
-    {% if requests %}
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Danh sách yêu cầu gần đây</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Tiêu đề</th>
-                                    <th>Thời lượng</th>
-                                    <th>Phạm vi ngày</th>
-                                    <th>Trạng thái</th>
-                                    <th>Phản hồi</th>
-                                    <th>Tạo lúc</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for request in requests %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ request.title }}</strong>
-                                        {% if request.description %}
-                                        <br><small class="text-muted">{{ request.description|truncatewords:10 }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ request.duration_minutes }} phút</td>
-                                    <td>
-                                        <small>
-                                            {{ request.date_range_start|date:"d/m/Y" }}<br>
-                                            đến {{ request.date_range_end|date:"d/m/Y" }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        {% if request.is_active %}
-                                        <span class="badge bg-success">Đang hoạt động</span>
-                                        {% elif request.status == 'locked' %}
-                                        <span class="badge bg-primary">Đã chốt</span>
-                                        {% elif request.status == 'cancelled' %}
-                                        <span class="badge bg-danger">Đã hủy</span>
-                                        {% elif request.status == 'draft' %}
-                                        <span class="badge bg-secondary">Nháp</span>
-                                        {% else %}
-                                        <span class="badge bg-warning">Đã đóng</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="progress" style="height: 25px;">
-                                            <div class="progress-bar {% if request.response_rate_int >= 80 %}bg-success{% elif request.response_rate_int >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
-                                                role="progressbar" style="width: {{ request.response_rate_int }}%"
-                                                aria-valuenow="{{ request.response_rate_int }}" aria-valuemin="0"
-                                                aria-valuemax="100">
-                                                {{ request.response_rate }}%
-                                            </div>
-                                        </div>
-                                        <small class="text-muted">
-                                            {{ request.responded_count }} / {{ request.total_count }} người
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <small>{{ request.created_at|date:"d/m/Y H:i" }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'view_request' request.id %}"
-                                                class="btn btn-outline-primary" title="Xem chi tiết">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-secondary copy-link-btn"
-                                                data-link="{{ request.share_link }}" title="Sao chép link">
-                                                <i class="bi bi-link-45deg"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger delete-btn"
-                                                data-request-id="{{ request.id }}"
-                                                data-request-title="{{ request.title }}" title="Xóa">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="meetings-tab" data-bs-toggle="tab" data-bs-target="#meetings" 
+                    type="button" role="tab" aria-controls="meetings" aria-selected="true">
+                <i class="bi bi-calendar-event"></i> Yêu cầu họp
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" 
+                    type="button" role="tab" aria-controls="projects" aria-selected="false">
+                <i class="fas fa-project-diagram"></i> Dự án
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" 
+                    type="button" role="tab" aria-controls="tasks" aria-selected="false">
+                <i class="fas fa-tasks"></i> Công việc của tôi
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="dashboardTabContent">
+        <!-- Meetings Tab -->
+        <div class="tab-pane fade show active" id="meetings" role="tabpanel" aria-labelledby="meetings-tab">
+
+            {% if requests %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Danh sách yêu cầu gần đây</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Tiêu đề</th>
+                                            <th>Thời lượng</th>
+                                            <th>Phạm vi ngày</th>
+                                            <th>Trạng thái</th>
+                                            <th>Phản hồi</th>
+                                            <th>Tạo lúc</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for request in requests %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ request.title }}</strong>
+                                                {% if request.description %}
+                                                <br><small class="text-muted">{{ request.description|truncatewords:10 }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ request.duration_minutes }} phút</td>
+                                            <td>
+                                                <small>
+                                                    {{ request.date_range_start|date:"d/m/Y" }}<br>
+                                                    đến {{ request.date_range_end|date:"d/m/Y" }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                {% if request.is_active %}
+                                                <span class="badge bg-success">Đang hoạt động</span>
+                                                {% elif request.status == 'locked' %}
+                                                <span class="badge bg-primary">Đã chốt</span>
+                                                {% elif request.status == 'cancelled' %}
+                                                <span class="badge bg-danger">Đã hủy</span>
+                                                {% elif request.status == 'draft' %}
+                                                <span class="badge bg-secondary">Nháp</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">Đã đóng</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 25px;">
+                                                    <div class="progress-bar {% if request.response_rate_int >= 80 %}bg-success{% elif request.response_rate_int >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                                                        role="progressbar" style="width: {{ request.response_rate_int }}%"
+                                                        aria-valuenow="{{ request.response_rate_int }}" aria-valuemin="0"
+                                                        aria-valuemax="100">
+                                                        {{ request.response_rate }}%
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ request.responded_count }} / {{ request.total_count }} người
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>{{ request.created_at|date:"d/m/Y H:i" }}</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'view_request' request.id %}"
+                                                        class="btn btn-outline-primary" title="Xem chi tiết">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-secondary copy-link-btn"
+                                                        data-link="{{ request.share_link }}" title="Sao chép link">
+                                                        <i class="bi bi-link-45deg"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger delete-btn"
+                                                        data-request-id="{{ request.id }}"
+                                                        data-request-title="{{ request.title }}" title="Xóa">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow text-center py-5">
-                <div class="card-body">
-                    <i class="bi bi-inbox display-1 text-muted"></i>
-                    <h4 class="mt-3">Chưa có yêu cầu nào</h4>
-                    <p class="text-muted">Bắt đầu bằng cách tạo yêu cầu mới</p>
-                    <a href="{% url 'create_request_step1' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Tạo yêu cầu đầu tiên
-                    </a>
+            {% else %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow text-center py-5">
+                        <div class="card-body">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <h4 class="mt-3">Chưa có yêu cầu nào</h4>
+                            <p class="text-muted">Bắt đầu bằng cách tạo yêu cầu mới</p>
+                            <a href="{% url 'create_request_step1' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Tạo yêu cầu đầu tiên
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% endif %}
+        </div>
+
+        <!-- Projects Tab -->
+        <div class="tab-pane fade" id="projects" role="tabpanel" aria-labelledby="projects-tab">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Dự án của tôi</h4>
+                <a href="{% url 'project_list' %}" class="btn btn-outline-primary">
+                    Xem tất cả <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <p class="text-muted">
+                Quản lý dự án của bạn tại <a href="{% url 'project_list' %}">trang dự án</a>
+            </p>
+        </div>
+
+        <!-- Tasks Tab -->
+        <div class="tab-pane fade" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Công việc của tôi</h4>
+                <a href="{% url 'my_tasks' %}" class="btn btn-outline-primary">
+                    Xem tất cả <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <p class="text-muted">
+                Xem tất cả công việc được gán cho bạn tại <a href="{% url 'my_tasks' %}">trang công việc</a>
+            </p>
         </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- Delete Confirmation Modal -->

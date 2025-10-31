@@ -1,0 +1,147 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}Dự án - Time Manager{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-project-diagram"></i> Dự án của tôi</h2>
+        <a href="{% url 'project_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Tạo dự án mới
+        </a>
+    </div>
+
+    <!-- Active Projects -->
+    <h3 class="mb-3">Dự án đang thực hiện</h3>
+    {% if active_projects %}
+        <div class="row">
+            {% for project in active_projects %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title">
+                                <a href="{% url 'project_detail' project.id %}" class="text-decoration-none">
+                                    {{ project.name }}
+                                </a>
+                            </h5>
+                            <span class="badge bg-{{ project.priority == 'urgent' and 'danger' or project.priority == 'high' and 'warning' or 'secondary' }}">
+                                {{ project.get_priority_display }}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text text-muted small">{{ project.description|truncatewords:20 }}</p>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>Tiến độ</span>
+                                <span class="fw-bold">{{ project.completion_percentage }}%</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ project.completion_percentage }}%"
+                                     aria-valuenow="{{ project.completion_percentage }}" 
+                                     aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="small text-muted">Tasks hoàn thành</div>
+                                <div class="fw-bold">{{ project.stats.completed_tasks }}/{{ project.stats.total_tasks }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="small text-muted">Quá hạn</div>
+                                <div class="fw-bold text-danger">{{ project.stats.overdue_tasks }}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Health Score & Probability -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="small text-muted">Sức khỏe:</span>
+                                <span class="badge bg-{{ project.health_score >= 70 and 'success' or project.health_score >= 40 and 'warning' or 'danger' }}">
+                                    {{ project.health_score }}%
+                                </span>
+                            </div>
+                            <div>
+                                <span class="small text-muted">Khả năng hoàn thành:</span>
+                                <span class="badge bg-{{ project.probability >= 70 and 'success' or project.probability >= 40 and 'warning' or 'danger' }}">
+                                    {{ project.probability }}%
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Deadline -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="far fa-calendar"></i> 
+                                {% if project.days_remaining < 0 %}
+                                    <span class="text-danger fw-bold">Quá hạn {{ project.days_remaining|abs }} ngày</span>
+                                {% elif project.days_remaining <= 3 %}
+                                    <span class="text-warning fw-bold">Còn {{ project.days_remaining }} ngày</span>
+                                {% else %}
+                                    Còn {{ project.days_remaining }} ngày
+                                {% endif %}
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> {{ project.members.count }} thành viên
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
+                            Xem chi tiết
+                        </a>
+                        {% if project.leader == request.user %}
+                        <a href="{% url 'project_analytics' project.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-chart-line"></i> Phân tích
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Chưa có dự án nào đang thực hiện. 
+            <a href="{% url 'project_create' %}">Tạo dự án mới</a>
+        </div>
+    {% endif %}
+
+    <!-- Other Projects (Completed, On Hold, Cancelled) -->
+    {% if other_projects %}
+    <h3 class="mb-3 mt-5">Dự án khác</h3>
+    <div class="accordion" id="otherProjectsAccordion">
+        {% for project in other_projects %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ forloop.counter }}">
+                    {{ project.name }}
+                    <span class="badge bg-{{ project.status == 'completed' and 'success' or 'secondary' }} ms-2">
+                        {{ project.get_status_display }}
+                    </span>
+                </button>
+            </h2>
+            <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" 
+                 data-bs-parent="#otherProjectsAccordion">
+                <div class="accordion-body">
+                    <p>{{ project.description }}</p>
+                    <div class="d-flex justify-content-between">
+                        <span>Hoàn thành: {{ project.completion_percentage }}%</span>
+                        <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
+                            Xem chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

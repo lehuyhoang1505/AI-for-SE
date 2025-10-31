@@ -1,0 +1,182 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}{{ title }} - Task{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'project_list' %}">Dự án</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+            {% if task %}
+            <li class="breadcrumb-item"><a href="{% url 'task_detail' project.id task.id %}">{{ task.title }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Title -->
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        {{ form.title.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.title.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Description -->
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        {{ form.description.label }}
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <!-- Status -->
+                                <div class="mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">
+                                        {{ form.status.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.status.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Priority -->
+                                <div class="mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                        {{ form.priority.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.priority }}
+                                    {% if form.priority.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.priority.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Due Date -->
+                                <div class="mb-3">
+                                    <label for="{{ form.due_date.id_for_label }}" class="form-label">
+                                        {{ form.due_date.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.due_date }}
+                                    {% if form.due_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.due_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Progress -->
+                                <div class="mb-3">
+                                    <label for="{{ form.progress_percentage.id_for_label }}" class="form-label">
+                                        {{ form.progress_percentage.label }}
+                                    </label>
+                                    {{ form.progress_percentage }}
+                                    {% if form.progress_percentage.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.progress_percentage.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Estimated Hours -->
+                                <div class="mb-3">
+                                    <label for="{{ form.estimated_hours.id_for_label }}" class="form-label">
+                                        {{ form.estimated_hours.label }}
+                                    </label>
+                                    {{ form.estimated_hours }}
+                                    {% if form.estimated_hours.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.estimated_hours.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Actual Hours -->
+                                <div class="mb-3">
+                                    <label for="{{ form.actual_hours.id_for_label }}" class="form-label">
+                                        {{ form.actual_hours.label }}
+                                    </label>
+                                    {{ form.actual_hours }}
+                                    {% if form.actual_hours.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.actual_hours.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Assignees -->
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.assignee_ids.label }}</label>
+                            <div class="row">
+                                {% for checkbox in form.assignee_ids %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        {{ checkbox }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.assignee_ids.errors %}
+                            <div class="invalid-feedback d-block">{{ form.assignee_ids.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-3">
+                            <label for="{{ form.tag_names.id_for_label }}" class="form-label">
+                                {{ form.tag_names.label }}
+                            </label>
+                            {{ form.tag_names }}
+                            <div class="form-text">{{ form.tag_names.help_text }}</div>
+                            {% if form.tag_names.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tag_names.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% if task %}{% url 'task_detail' project.id task.id %}{% else %}{% url 'project_detail' project.id %}{% endif %}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

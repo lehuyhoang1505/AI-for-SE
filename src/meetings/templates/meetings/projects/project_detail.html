@@ -1,0 +1,282 @@
+{% extends 'meetings/base.html' %}
+
+{% block title %}{{ project.name }} - Dự án{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Project Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'project_list' %}">Dự án</a></li>
+                    <li class="breadcrumb-item active">{{ project.name }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2>{{ project.name }}</h2>
+                    <p class="text-muted">{{ project.description }}</p>
+                </div>
+                <div>
+                    <span class="badge bg-{{ project.status == 'active' and 'success' or 'secondary' }} fs-6">
+                        {{ project.get_status_display }}
+                    </span>
+                    <span class="badge bg-{{ project.priority == 'urgent' and 'danger' or project.priority == 'high' and 'warning' or 'secondary' }} fs-6">
+                        {{ project.get_priority_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 text-end">
+            {% if project.leader == request.user %}
+            <div class="btn-group" role="group">
+                <a href="{% url 'project_edit' project.id %}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit"></i> Chỉnh sửa
+                </a>
+                <a href="{% url 'project_members' project.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-users"></i> Thành viên
+                </a>
+                <a href="{% url 'project_analytics' project.id %}" class="btn btn-outline-info">
+                    <i class="fas fa-chart-line"></i> Phân tích
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Project Stats Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Tiến độ</h6>
+                    <h3 class="card-title text-success">{{ stats.completion_rate }}%</h3>
+                    <div class="progress" style="height: 5px;">
+                        <div class="progress-bar bg-success" style="width: {{ stats.completion_rate }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Sức khỏe dự án</h6>
+                    <h3 class="card-title text-{{ health_score >= 70 and 'success' or health_score >= 40 and 'warning' or 'danger' }}">
+                        {{ health_score }}%
+                    </h3>
+                    <small>Đánh giá tổng quan</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Khả năng hoàn thành</h6>
+                    <h3 class="card-title text-{{ probability >= 70 and 'success' or probability >= 40 and 'warning' or 'danger' }}">
+                        {{ probability }}%
+                    </h3>
+                    <small>Dựa trên velocity</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Deadline</h6>
+                    <h3 class="card-title text-{{ project.days_remaining < 0 and 'danger' or project.days_remaining <= 3 and 'warning' or 'primary' }}">
+                        {% if project.days_remaining < 0 %}
+                            Quá {{ project.days_remaining|abs }}
+                        {% else %}
+                            {{ project.days_remaining }}
+                        {% endif %}
+                    </h3>
+                    <small>ngày</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Stats -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Thống kê công việc</h5>
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="h4 mb-0">{{ stats.total_tasks }}</div>
+                            <div class="text-muted small">Tổng số</div>
+                        </div>
+                        <div class="col">
+                            <div class="h4 mb-0 text-success">{{ stats.completed_tasks }}</div>
+                            <div class="text-muted small">Hoàn thành</div>
+                        </div>
+                        <div class="col">
+                            <div class="h4 mb-0 text-primary">{{ stats.in_progress_tasks }}</div>
+                            <div class="text-muted small">Đang làm</div>
+                        </div>
+                        <div class="col">
+                            <div class="h4 mb-0 text-info">{{ stats.todo_tasks }}</div>
+                            <div class="text-muted small">Cần làm</div>
+                        </div>
+                        <div class="col">
+                            <div class="h4 mb-0 text-danger">{{ stats.overdue_tasks }}</div>
+                            <div class="text-muted small">Quá hạn</div>
+                        </div>
+                        <div class="col">
+                            <div class="h4 mb-0 text-warning">{{ stats.soon_overdue_tasks }}</div>
+                            <div class="text-muted small">Sắp quá hạn</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommended Tasks -->
+    {% if recommended %}
+    <div class="alert alert-info mb-4">
+        <h6><i class="fas fa-lightbulb"></i> Công việc đề xuất cho bạn:</h6>
+        <ul class="mb-0">
+            {% for task in recommended %}
+            <li>
+                <a href="{% url 'task_detail' project.id task.id %}">{{ task.title }}</a>
+                <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                    {{ task.get_priority_display }}
+                </span>
+                {% if task.is_overdue %}
+                <span class="badge bg-danger">Quá hạn</span>
+                {% elif task.is_soon_overdue %}
+                <span class="badge bg-warning">Sắp quá hạn</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Task Management Section -->
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-tasks"></i> Công việc</h5>
+                        <a href="{% url 'task_create' project.id %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus"></i> Thêm công việc
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Filter Form -->
+                <div class="card-body">
+                    <form method="get" class="row g-3 mb-4">
+                        <div class="col-md-2">
+                            {{ filter_form.status }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.priority }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.assignee }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.tag }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.search }}
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary w-100">Lọc</button>
+                        </div>
+                    </form>
+
+                    <!-- Task List -->
+                    {% if tasks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Công việc</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ưu tiên</th>
+                                    <th>Người thực hiện</th>
+                                    <th>Hạn chót</th>
+                                    <th>Tiến độ</th>
+                                    <th>Tags</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in tasks %}
+                                <tr class="{% if task.is_overdue %}table-danger{% elif task.is_soon_overdue %}table-warning{% endif %}">
+                                    <td>
+                                        <a href="{% url 'task_detail' project.id task.id %}">
+                                            {{ task.title }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ task.status == 'completed' and 'success' or task.status == 'in_progress' and 'primary' or 'secondary' }}">
+                                            {{ task.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ task.priority == 'urgent' and 'danger' or task.priority == 'high' and 'warning' or 'secondary' }}">
+                                            {{ task.get_priority_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% for assignee in task.assignees.all %}
+                                            <span class="badge bg-info">{{ assignee.username }}</span>
+                                        {% empty %}
+                                            <span class="text-muted">Chưa gán</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {{ task.due_date }}
+                                        {% if task.is_overdue %}
+                                            <br><small class="text-danger">Quá hạn {{ task.days_remaining|abs }} ngày</small>
+                                        {% elif task.is_soon_overdue %}
+                                            <br><small class="text-warning">Còn {{ task.days_remaining }} ngày</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px; min-width: 60px;">
+                                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%">
+                                                {{ task.progress_percentage }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% for tag in task.tags.all %}
+                                            <span class="badge" style="background-color: {{ tag.color }}">{{ tag.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'task_edit' project.id task.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Chưa có công việc nào. 
+                        <a href="{% url 'task_create' project.id %}">Tạo công việc mới</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
