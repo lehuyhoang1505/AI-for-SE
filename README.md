@@ -47,7 +47,6 @@ source .venv/bin/activate  # Linux/Mac
 
 ```bash
 # Cài đặt dependencies cho ứng dụng
-pip install -U pip
 pip install -r src/requirements.txt
 
 # Cài đặt dependencies cho test (tùy chọn, để chạy tests)
